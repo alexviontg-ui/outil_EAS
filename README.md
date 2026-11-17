@@ -59,17 +59,9 @@ Les données restent dans le navigateur de chaque utilisateur (`localStorage`) e
 
 ## Logo
 
-Un emplacement est prévu en haut à gauche de la barre (`index.html`, élément `.logo-slot`). Pour mettre le logo, remplacez :
+Le logo Eau Air Système s'affiche en haut à gauche de la barre (`assets/logo-eas.svg`, classe `.brand-logo`). Le SVG a été converti depuis `logo_EAS_vectorise.eps` (Illustrator CS4) en reprenant ses tracés. Le bleu PANTONE 2935 C y est rendu en `#0057B8`. Un fond blanc a été ajouté pour qu'il reste lisible en mode sombre.
 
-```html
-<span class="logo-slot" title="Emplacement du logo"></span>
-```
-
-par par exemple :
-
-```html
-<img src="assets/logo.svg" alt="Eau Air Système" height="36">
-```
+Pour le remplacer, déposez un nouveau fichier `assets/logo-eas.svg`, ou un PNG en adaptant `src` dans `index.html`.
 
 ## Modifications faites dans les outils
 
