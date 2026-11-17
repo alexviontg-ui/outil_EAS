@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outil études acoustiques EAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : barre d'onglets + un module par écran, entrées à gauche/au-dessus, résultats en cartouche */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#14232b; --muted:#5a6c74; --line:#d5dfe3;
+  --accent:#0b6e86; --accent-soft:#e2f1f5;
+  --ok:#1f7a45; --ok-bg:#e3f4ea; --warn:#9a6200; --warn-bg:#fdf1db; --bad:#b3261e; --bad-bg:#fbe5e3;
+  --input:#fbfdfd;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f181c; --panel:#162329; --ink:#e3edf0; --muted:#93a7ae; --line:#2a3b42;
+    --accent:#4cc0da; --accent-soft:#16343d;
+    --ok:#6fd39a; --ok-bg:#163327; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86; --bad-bg:#3d1c1a;
+    --input:#111d22; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f181c; --panel:#162329; --ink:#e3edf0; --muted:#93a7ae; --line:#2a3b42;
+  --accent:#4cc0da; --accent-soft:#16343d;
+  --ok:#6fd39a; --ok-bg:#163327; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86; --bad-bg:#3d1c1a;
+  --input:#111d22; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body)}
+header{padding:18px 20px 0;max-width:1280px;margin:0 auto}
+h1{font:600 22px/1.2 var(--f-display);margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin-top:14px;border-bottom:1px solid var(--line)}
+nav a{padding:9px 14px;text-decoration:none;color:var(--muted);font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;margin-bottom:-1px}
+nav a:hover{color:var(--ink)}
+nav a.on{background:var(--panel);color:var(--accent);border-color:var(--line)}
+nav a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+main{max-width:1280px;margin:0 auto;padding:16px 20px 40px}
+section.mod{display:none;flex-direction:column;gap:16px}
+section.mod.on{display:flex}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+.card h2{font:600 17px/1.25 var(--f-display);margin:0 0 4px}
+.card h3{font:600 14px/1.3 var(--f-body);margin:14px 0 6px;color:var(--accent)}
+.hint{color:var(--muted);font-size:12.5px;margin:2px 0 10px;max-width:80ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 14px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+input,select,textarea{font:13px var(--f-body);color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:5px;padding:6px 7px;width:100%}
+input.n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+textarea{font-family:var(--f-mono);min-height:120px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px;background:var(--accent-soft)}
+td.l,th.l{text-align:left}
+td input.n{width:66px;padding:4px 5px}
+td input.t{min-width:150px;padding:4px 5px}
+td select{min-width:180px;padding:4px 5px}
+tbody tr:last-child td{border-bottom:none}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr.tot td{font-weight:600;background:var(--accent-soft)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+button{font:500 13px var(--f-body);border:1px solid var(--accent);background:var(--panel);color:var(--accent);border-radius:5px;padding:6px 11px;cursor:pointer}
+button.pri{background:var(--accent);color:var(--panel)}
+button.x{border-color:var(--line);color:var(--muted);padding:3px 8px}
+button.x:hover{color:var(--bad);border-color:var(--bad)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.na{background:var(--accent-soft);color:var(--muted)}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:6px}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:9px 11px;background:var(--panel)}
+.kpi.ok{border-left-color:var(--ok)} .kpi.bad{border-left-color:var(--bad)} .kpi.warn{border-left-color:var(--warn)}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .v{font:500 20px/1.2 var(--f-mono);font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:6px 10px;background:var(--warn-bg);border-radius:4px;max-width:110ch}
+.note b{color:var(--ink)}
+svg text{fill:var(--muted);font:11px var(--f-body)}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink)}
+.chk input{width:auto}
+.flash{color:var(--ok);font-size:12.5px;min-height:1em}
+</style>
+</head>
+<body>
+<header>
+  <h1>Outil études acoustiques – ouvrages aquatiques</h1>
+  <div class="sub">Eau Air Système · Groupe BC · Pré-dimensionnement : réverbération du hall bassin, bruit des équipements, émergence en voisinage. <b>Résultats indicatifs, à faire valider par une personne compétente.</b></div>
+  <nav id="tabs">
+    <a href="#pieges" data-t="pieges">★ Pièges à son CTA</a>
+    <a href="#reverberation" data-t="reverberation">1 · Réverbération</a>
+    <a href="#equipement" data-t="equipement">2 · Équipements en local</a>
+    <a href="#voisinage" data-t="voisinage">3 · Voisinage / émergence</a>
+    <a href="#calculs" data-t="calculs">4 · Calculs dB</a>
+    <a href="#projet" data-t="projet">5 · Projet / export</a>
+  </nav>
+</header>
+<main>
+  <section class="mod" id="m-pieges"></section>
+  <section class="mod" id="m-reverberation"></section>
+  <section class="mod" id="m-equipement"></section>
+  <section class="mod" id="m-voisinage"></section>
+  <section class="mod" id="m-calculs"></section>
+  <section class="mod" id="m-projet"></section>
+</main>
+<script>
+"use strict";
+/* ===================== Données de base ===================== */
+const B8=[63,125,250,500,1000,2000,4000,8000];
+const B6=[125,250,500,1000,2000,4000];
+const AW=[-26.2,-16.1,-8.6,-3.2,0,1.2,1.0,-1.1]; // pondération A (CEI 61672-1), bandes d'octave
+const fb=f=>f>=1000?(f/1000)+'k':String(f);
+
+// Bibliothèque de coefficients d'absorption INDICATIFS (125…4000 Hz). À remplacer par les PV d'essai fabricant (NF EN ISO 354).
+const MAT={
+  carrelage:{n:"Carrelage / grès (plages)",a:[0.01,0.01,0.01,0.02,0.02,0.02]},
+  eau:{n:"Plan d'eau (surface libre)",a:[0.01,0.01,0.01,0.015,0.02,0.025]},
+  beton:{n:"Béton lisse / peint",a:[0.01,0.01,0.02,0.02,0.02,0.03]},
+  parpaing:{n:"Blocs béton peints",a:[0.10,0.05,0.06,0.07,0.09,0.08]},
+  vitrage2:{n:"Double vitrage grandes baies",a:[0.18,0.06,0.04,0.03,0.02,0.02]},
+  vitrage1:{n:"Simple vitrage grandes baies",a:[0.35,0.25,0.18,0.12,0.07,0.04]},
+  bacplein:{n:"Bac acier / tôle pleine",a:[0.10,0.07,0.05,0.04,0.04,0.04]},
+  bacperf:{n:"Bac acier perforé + laine minérale",a:[0.35,0.70,0.90,0.85,0.75,0.65]},
+  tendu:{n:"Plafond tendu microperforé + absorbant",a:[0.30,0.60,0.85,0.85,0.75,0.65]},
+  lainebois:{n:"Panneau laine de bois 35 mm sur plénum",a:[0.25,0.40,0.70,0.65,0.70,0.80]},
+  panhydro:{n:"Panneau absorbant mural hydrofuge 40 mm",a:[0.30,0.75,0.95,0.95,0.90,0.85]},
+  lambris:{n:"Lambris bois plein",a:[0.15,0.11,0.10,0.07,0.06,0.07]},
+  platre:{n:"Plaque de plâtre sur ossature",a:[0.29,0.10,0.05,0.04,0.07,0.09]},
+  porte:{n:"Porte bois",a:[0.14,0.10,0.06,0.08,0.10,0.10]},
+  custom:{n:"Personnalisé (PV fabricant)",a:null}
+};
+const OBJ={
+  baffle:{n:"Baffle suspendu 1,2×0,6 m (double face)",A:[0.30,0.60,1.10,1.40,1.40,1.30]},
+  personne:{n:"Personne en maillot (hors eau)",A:[0.05,0.10,0.20,0.30,0.35,0.35]},
+  custom:{n:"Personnalisé",A:null}
+};
+const DUREES=[["≤ 1 min",6],["1 à 5 min",5],["5 à 20 min",4],["20 min à 2 h",3],["2 h à 4 h",2],["4 h à 8 h",1],["> 8 h",0]];
+
+/* ===================== Outils de calcul ===================== */
+const L10=Math.log10;
+const num=v=>{if(typeof v==="number")return v;const x=parseFloat(String(v).replace(",",".").replace(/\s/g,""));return isFinite(x)?x:NaN};
+const fmt=(x,d=1)=>isFinite(x)?x.toFixed(d).replace(".",","):"—";
+const dBsum=a=>{let s=0,k=0;for(const x of a){const v=num(x);if(isFinite(v)){s+=Math.pow(10,v/10);k++}}return k?10*L10(s):NaN};
+const dBmean=a=>{const v=a.map(num).filter(isFinite);return v.length?10*L10(v.reduce((s,x)=>s+Math.pow(10,x/10),0)/v.length):NaN};
+const toA=oct=>dBsum(oct.map((x,i)=>num(x)+AW[i]));
+const sound=Tc=>331.3+0.606*Tc;
+// Absorption atmosphérique ISO 9613-1, en dB/m
+function alphaAir(f,Tc,HR,pa=101.325){
+  const T=Tc+273.15,T0=293.15,T01=273.16,pr=101.325;
+  const C=-6.8346*Math.pow(T01/T,1.261)+4.6151;
+  const h=HR*Math.pow(10,C)/(pa/pr);
+  const frO=(pa/pr)*(24+4.04e4*h*(0.02+h)/(0.391+h));
+  const frN=(pa/pr)*Math.pow(T/T0,-0.5)*(9+280*h*Math.exp(-4.170*(Math.pow(T/T0,-1/3)-1)));
+  return 8.686*f*f*(1.84e-11/(pa/pr)*Math.sqrt(T/T0)+Math.pow(T/T0,-2.5)*(0.01275*Math.exp(-2239.1/T)/(frO+f*f/frO)+0.1068*Math.exp(-3352/T)/(frN+f*f/frN)));
+}
+const corrDuree=label=>{const d=DUREES.find(x=>x[0]===label);return d?d[1]:0};
+
+/* ===================== État & exemple ===================== */
+function exemple(){
+  return {
+    meta:{projet:"Exemple – Centre aquatique (données fictives)",affaire:"",auteur:"",date:new Date().toISOString().slice(0,10),notes:""},
+    rev:{nom:"Hall bassins",L:40,l:25,H:8,V:8000,T:28,HR:60,
+      target:{mode:"piscine",k:0.13,fixed:2.0,bands:[true,true,true,true,true,true]},
+      surfaces:[
+        {nom:"Plan d'eau bassin sportif 25×15",mat:"eau",S:375,a:MAT.eau.a.slice()},
+        {nom:"Plan d'eau bassin ludique",mat:"eau",S:100,a:MAT.eau.a.slice()},
+        {nom:"Plages",mat:"carrelage",S:525,a:MAT.carrelage.a.slice()},
+        {nom:"Plafond bac acier perforé + laine",mat:"bacperf",S:1000,a:MAT.bacperf.a.slice()},
+        {nom:"Murs béton",mat:"beton",S:740,a:MAT.beton.a.slice()},
+        {nom:"Façade vitrée",mat:"vitrage2",S:300,a:MAT.vitrage2.a.slice()}
+      ],
+      objets:[],
+      trait:{mat:"panhydro",a:MAT.panhydro.a.slice(),support:4}
+    },
+    loc:{link:false,V:350,S:330,Tr:[1.8,1.6,1.5,1.4,1.3,1.1],objectif:85,
+      sources:[
+        {nom:"Pompe filtration 1",mode:"spec",Lw:[78,82,84,85,83,80,75,70],LwA:85,Q:2,r:3},
+        {nom:"Pompe filtration 2",mode:"spec",Lw:[78,82,84,85,83,80,75,70],LwA:85,Q:2,r:5}
+      ]},
+    vois:{recepteur:"ext",periode:"nuit",duree:"> 8 h",LresA:38,useResOct:false,resOct:[50,45,40,35,32,28,22,15],
+      facade:[0,0,0,0,0,0,0,0],T:15,HR:70,
+      sources:[
+        {nom:"CTA déshu – bruit rayonné par le caisson",on:true,Lw:[78,80,76,72,68,64,58,52],Q:2,r:45,ecran:false,delta:0,att:[0,0,0,0,0,0,0,0]},
+        {nom:"PAC / aéroréfrigérant",on:true,Lw:[80,82,80,78,75,71,66,60],Q:2,r:60,ecran:true,delta:0.5,att:[0,0,0,0,0,0,0,0]}
+      ]},
+    pas:{hall:{type:"dBA",val:45},local:{type:"NR",val:35},marge:3,vmax:8,d:200,s:100,dpmax:"",
+      ctas:[{nom:"CTA 1 – Déshumidification hall bassins",debit:30000,piq:[
+        {type:"Soufflage",on:true,dest:"hall",Lw:[90,92,90,87,84,80,75,70],nat:[12,8,5,3,3,3,3,3],N:12,r:4,Q:2,ecran:false,delta:0,sil:{use:false,ref:"",IL:[0,0,0,0,0,0,0,0]}},
+        {type:"Reprise",on:true,dest:"hall",Lw:[86,88,86,83,80,76,71,66],nat:[10,6,4,3,3,3,3,3],N:4,r:6,Q:2,ecran:false,delta:0,sil:{use:false,ref:"",IL:[0,0,0,0,0,0,0,0]}},
+        {type:"Air neuf",on:true,dest:"ext",Lw:[84,86,83,80,76,72,66,60],nat:[0,0,0,0,0,0,0,0],N:1,r:45,Q:2,ecran:false,delta:0,sil:{use:false,ref:"",IL:[0,0,0,0,0,0,0,0]}},
+        {type:"Rejet",on:true,dest:"ext",Lw:[88,90,87,84,80,76,70,64],nat:[0,0,0,0,0,0,0,0],N:1,r:45,Q:2,ecran:false,delta:0,sil:{use:false,ref:"",IL:[0,0,0,0,0,0,0,0]}}
+      ]}]},
+    calc:{add:"62; 65; 58",tot:68,fond:63,oct:[60,58,55,52,50,47,43,38],r1:1,Lp1:70,r2:10,lw:90,q:2,rr:15,
+      hs:1.5,hr:4,he:3,ds:5,dr:40}
+  };
+}
+let S;
+try{const raw=localStorage.getItem("eas-acou-v1");S=raw?JSON.parse(raw):exemple()}catch(e){S=exemple()}
+if(!S.pas)S.pas=exemple().pas;
+function save(){try{localStorage.setItem("eas-acou-v1",JSON.stringify(S))}catch(e){}}
+const getP=(p)=>p.split(".").reduce((o,k)=>o==null?o:o[k],S);
+function setP(p,v){const ks=p.split(".");let o=S;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v}
+
+/* ===================== Petits générateurs HTML ===================== */
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const inN=(p,w)=>`<input class="n" id="i-${p.replace(/\./g,'-')}" data-p="${p}" value="${esc(fmtIn(getP(p)))}" inputmode="decimal"${w?` style="width:${w}px"`:""}>`;
+const inT=(p)=>`<input class="t" id="i-${p.replace(/\./g,'-')}" data-p="${p}" data-s="1" value="${esc(getP(p))}">`;
+const fmtIn=v=>typeof v==="number"?String(v).replace(".",","):(v??"");
+const field=(lab,p,txt)=>`<label class="f" for="i-${p.replace(/\./g,'-')}">${lab}${txt?inT(p):inN(p)}</label>`;
+const sel=(p,opts,act)=>`<select id="i-${p.replace(/\./g,'-')}" data-p="${p}" data-s="1"${act?` data-a="${act}"`:""}>${opts.map(([v,t])=>`<option value="${esc(v)}"${String(getP(p))===String(v)?" selected":""}>${esc(t)}</option>`).join("")}</select>`;
+const pill=(st,t)=>`<span class="pill ${st}">${t}</span>`;
+const kpi=(k,v,s,st)=>`<div class="kpi ${st||""}"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+
+/* ===================== MODULE 1 : réverbération ===================== */
+function calcRev(){
+  const R=S.rev,V=num(R.V),c=sound(num(R.T)),kS=24*Math.log(10)/c;
+  const out=B6.map((f,i)=>{
+    let St=0,As=0;R.surfaces.forEach(s=>{const Si=num(s.S)||0;St+=Si;As+=Si*(num(s.a[i])||0)});
+    let Ao=0;R.objets.forEach(o=>{Ao+=(num(o.n)||0)*(num(o.A[i])||0)});
+    const aAir=alphaAir(f,num(R.T),num(R.HR)),m=aAir/(10*L10(Math.E)),Aair=4*m*V;
+    const abar=Math.min((As+Ao)/St,0.99),Atot=As+Ao+Aair;
+    const TS=kS*V/Atot,TE=kS*V/(-St*Math.log(1-abar)+Aair);
+    return {f,St,As,Ao,Aair,aAir,abar,Atot,TS,TE};
+  });
+  const t=R.target;let tgt=NaN;
+  if(t.mode==="piscine"||t.mode==="sport")tgt=num(t.k)*Math.cbrt(V);else tgt=num(t.fixed);
+  out.forEach((o,i)=>{o.tgt=t.bands[i]?tgt:NaN;o.ok=!t.bands[i]?null:o.TS<=tgt});
+  const mid=(out[2].TS+out[3].TS+out[4].TS)/3;
+  // dimensionnement traitement
+  const sup=R.surfaces[t?R.trait.support:-1];
+  const trt=out.map((o,i)=>{
+    if(!t.bands[i])return {need:NaN,S:NaN};
+    const Areq=kS*V/tgt,dA=Areq-o.Atot;
+    const da=(num(R.trait.a[i])||0)-(sup?(num(sup.a[i])||0):0);
+    return {need:dA,S:dA<=0?0:(da>0?dA/da:Infinity)};
+  });
+  const Sreq=Math.max(...trt.map(x=>x.S).filter(x=>!isNaN(x)),0);
+  return {out,tgt,mid,kS,trt,Sreq,c};
+}
+function viewRev(){
+  const R=S.rev,matOpts=Object.entries(MAT).map(([k,v])=>[k,v.n]),objOpts=Object.entries(OBJ).map(([k,v])=>[k,v.n]);
+  const tm=R.target.mode;
+  return `
+<div class="card">
+  <h2>Local étudié</h2>
+  <p class="hint">Saisis le volume et les conditions d'ambiance. Pour un hall bassin, l'air chaud et humide absorbe peu : l'absorption de l'air est calculée selon ISO 9613-1 et compte surtout au-dessus de 2 kHz dans les grands volumes.</p>
+  <div class="grid">
+    ${field("Désignation","rev.nom",1)}
+    ${field("Longueur L (m)","rev.L")}${field("Largeur l (m)","rev.l")}${field("Hauteur moyenne H (m)","rev.H")}
+    ${field("Volume V (m³)","rev.V")}
+    ${field("Température air (°C)","rev.T")}${field("Humidité relative (%)","rev.HR")}
+  </div>
+  <div class="row"><button data-a="vol">Volume = L × l × H</button><button data-a="gen">Générer les parois depuis L × l × H</button><span class="flash" id="fl-rev"></span></div>
+</div>
+<div class="card">
+  <h2>Parois et revêtements</h2>
+  <p class="hint">Une ligne par surface homogène. Le choix d'un matériau remplit les coefficients α (valeurs indicatives de la bibliothèque) ; remplace-les par les valeurs du PV d'essai du produit prescrit dès que tu l'as.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="l">Désignation</th><th class="l">Matériau</th><th>S (m²)</th>${B6.map(f=>`<th>α ${fb(f)}</th>`).join("")}<th></th></tr></thead>
+    <tbody>${R.surfaces.map((s,i)=>`<tr><td class="l">${inT(`rev.surfaces.${i}.nom`)}</td><td class="l">${sel(`rev.surfaces.${i}.mat`,matOpts,"mat")}</td><td>${inN(`rev.surfaces.${i}.S`)}</td>${B6.map((f,j)=>`<td>${inN(`rev.surfaces.${i}.a.${j}`,58)}</td>`).join("")}<td><button class="x" data-a="delS" data-i="${i}" aria-label="Supprimer la ligne">✕</button></td></tr>`).join("")}</tbody>
+  </table></div>
+  <div class="row"><button data-a="addS">+ Ajouter une surface</button></div>
+  <h3>Absorbeurs unitaires (baffles, occupants…)</h3>
+  <div class="tw"><table>
+    <thead><tr><th class="l">Désignation</th><th class="l">Type</th><th>Nombre</th>${B6.map(f=>`<th>A ${fb(f)} (m²/u)</th>`).join("")}<th></th></tr></thead>
+    <tbody>${R.objets.length?R.objets.map((o,i)=>`<tr><td class="l">${inT(`rev.objets.${i}.nom`)}</td><td class="l">${sel(`rev.objets.${i}.typ`,objOpts,"obj")}</td><td>${inN(`rev.objets.${i}.n`)}</td>${B6.map((f,j)=>`<td>${inN(`rev.objets.${i}.A.${j}`,58)}</td>`).join("")}<td><button class="x" data-a="delO" data-i="${i}" aria-label="Supprimer la ligne">✕</button></td></tr>`).join(""):`<tr><td class="l" colspan="10" style="color:var(--muted)">Aucun absorbeur unitaire.</td></tr>`}</tbody>
+  </table></div>
+  <div class="row"><button data-a="addO">+ Ajouter un absorbeur unitaire</button></div>
+</div>
+<div class="card">
+  <h2>Objectif de temps de réverbération</h2>
+  <div class="grid">
+    <label class="f" for="i-rev-target-mode">Référence${sel("rev.target.mode",[["piscine","Piscine – NF P90-207 : k·V^(1/3)"],["sport","Salle sportive – NF P90-207 : k·V^(1/3)"],["fixe","Valeur fixe (programme / CCTP)"]],"tgt")}</label>
+    ${tm!=="fixe"?field("Coefficient k","rev.target.k"):field("Tr maxi (s)","rev.target.fixed")}
+  </div>
+  <div class="row">Bandes contrôlées : ${B6.map((f,i)=>`<label class="chk" for="cb-b${i}"><input type="checkbox" id="cb-b${i}" data-cb="rev.target.bands.${i}"${R.target.bands[i]?" checked":""}>${fb(f)} Hz</label>`).join("")}</div>
+  <p class="note"><b>À vérifier :</b> les coefficients proposés (0,13 pour les piscines, 0,14 pour les salles sportives) sont repris de synthèses de la norme NF P90-207 (oct. 1992) et non du texte lui-même. Contrôle-les sur la norme (boutique AFNOR) et donne la priorité à l'objectif du programme ou du CCTP s'il est plus exigeant.</p>
+</div>
+<div class="card" id="o-rev"></div>`;
+}
+function outRev(){
+  const r=calcRev(),R=S.rev,o=r.out;
+  const allOk=o.every(x=>x.ok!==false);
+  const worst=o.filter(x=>x.ok!==null).reduce((a,b)=>(b.TS-b.tgt)>(a.TS-a.tgt)?b:a,o.find(x=>x.ok!==null)||o[0]);
+  const supRow=R.surfaces[R.trait.support];
+  const matOpts=Object.entries(MAT).map(([k,v])=>[k,v.n]);
+  return `<h2>Résultats</h2>
+<div class="res">
+  ${kpi("Tr moyen 500–2000 Hz (Sabine)",fmt(r.mid,2)+" s","",allOk?"ok":"bad")}
+  ${kpi("Objectif",fmt(r.tgt,2)+" s",R.target.mode==="fixe"?"valeur fixe":`${fmt(num(R.target.k),2)} × V^(1/3), V = ${fmt(num(R.V),0)} m³`)}
+  ${kpi("Conformité",allOk?pill("ok","Conforme"):pill("bad","Non conforme"),allOk?"toutes bandes contrôlées":`pire bande : ${fb(worst.f)} Hz (${fmt(worst.TS,2)} s)`,allOk?"ok":"bad")}
+  ${kpi("Surface de traitement à ajouter",allOk?"0 m²":(isFinite(r.Sreq)?fmt(Math.ceil(r.Sreq),0)+" m²":"impossible"),allOk?"objectif déjà atteint":"matériau et support choisis ci-dessous",allOk?"ok":"warn")}
+</div>
+<h3>Détail par bande d'octave</h3>
+<div class="tw"><table>
+<thead><tr><th class="l">Bande (Hz)</th>${B6.map(f=>`<th>${f}</th>`).join("")}</tr></thead>
+<tbody>
+<tr><td class="l">Surface totale S (m²)</td>${o.map(x=>`<td class="num">${fmt(x.St,0)}</td>`).join("")}</tr>
+<tr><td class="l">A parois (m²)</td>${o.map(x=>`<td class="num">${fmt(x.As,1)}</td>`).join("")}</tr>
+<tr><td class="l">A absorbeurs unitaires (m²)</td>${o.map(x=>`<td class="num">${fmt(x.Ao,1)}</td>`).join("")}</tr>
+<tr><td class="l">Absorption de l'air (dB/km)</td>${o.map(x=>`<td class="num">${fmt(x.aAir*1000,1)}</td>`).join("")}</tr>
+<tr><td class="l">A air = 4mV (m²)</td>${o.map(x=>`<td class="num">${fmt(x.Aair,1)}</td>`).join("")}</tr>
+<tr><td class="l">α moyen</td>${o.map(x=>`<td class="num">${fmt(x.abar,3)}</td>`).join("")}</tr>
+<tr class="tot"><td class="l">Tr Sabine (s)</td>${o.map(x=>`<td class="num">${fmt(x.TS,2)}</td>`).join("")}</tr>
+<tr><td class="l">Tr Eyring (s)</td>${o.map(x=>`<td class="num">${fmt(x.TE,2)}</td>`).join("")}</tr>
+<tr><td class="l">Objectif (s)</td>${o.map(x=>`<td class="num">${fmt(x.tgt,2)}</td>`).join("")}</tr>
+<tr><td class="l">Statut</td>${o.map(x=>`<td>${x.ok===null?pill("na","hors critère"):x.ok?pill("ok","OK"):pill("bad","dépasse")}</td>`).join("")}</tr>
+</tbody></table></div>
+${chartTr(o)}
+<h3>Dimensionnement du traitement</h3>
+<p class="hint">Choisis le produit absorbant et la surface sur laquelle il sera posé (sa surface remplace celle du support). L'outil calcule la surface minimale pour respecter l'objectif dans chaque bande contrôlée.</p>
+<div class="grid">
+  <label class="f" for="i-rev-trait-mat">Produit absorbant${sel("rev.trait.mat",matOpts,"tmat")}</label>
+  <label class="f" for="i-rev-trait-support">Posé sur (support remplacé)${sel("rev.trait.support",[["-1","Aucun (ajout en plus, ex. suspendu)"],...R.surfaces.map((s,i)=>[String(i),s.nom||("Ligne "+(i+1))])],"tsup")}</label>
+</div>
+<div class="tw" style="margin-top:8px"><table>
+<thead><tr><th class="l">Bande (Hz)</th>${B6.map(f=>`<th>${f}</th>`).join("")}</tr></thead>
+<tbody>
+<tr><td class="l">α produit</td>${B6.map((f,j)=>`<td>${inN(`rev.trait.a.${j}`,58)}</td>`).join("")}</tr>
+<tr><td class="l">α support</td>${B6.map((f,j)=>`<td class="num">${supRow?fmt(num(supRow.a[j]),2):"0"}</td>`).join("")}</tr>
+<tr><td class="l">ΔA nécessaire (m²)</td>${r.trt.map(x=>`<td class="num">${isNaN(x.need)?"—":fmt(Math.max(0,x.need),0)}</td>`).join("")}</tr>
+<tr class="tot"><td class="l">Surface de produit (m²)</td>${r.trt.map(x=>`<td class="num">${isNaN(x.S)?"—":(isFinite(x.S)?fmt(x.S,0):"∞")}</td>`).join("")}</tr>
+</tbody></table></div>
+<div class="row"><button class="pri" data-a="apply"${allOk||!isFinite(r.Sreq)?" disabled":""}>Appliquer ${isFinite(r.Sreq)&&!allOk?fmt(Math.ceil(r.Sreq),0)+" m²":""} au calcul</button>
+<span class="hint" style="margin:0">Gain sur le niveau réverbéré après traitement : ΔL = 10·log(A après / A avant).</span></div>
+${supRow&&isFinite(r.Sreq)&&r.Sreq>num(supRow.S)?`<p class="note"><b>Attention :</b> la surface nécessaire (${fmt(Math.ceil(r.Sreq),0)} m²) dépasse la surface du support (${fmt(num(supRow.S),0)} m²). Complète avec un autre support ou un produit plus absorbant.</p>`:""}
+<p class="note"><b>Limites :</b> Sabine et Eyring supposent un champ diffus. Dans un hall bassin très allongé, avec un plafond absorbant et des parois réfléchissantes, le Tr réel est souvent plus long que le calcul (échos flottants entre murs parallèles). Garde une marge d'au moins 10 % et traite aussi les parois verticales.</p>`;
+}
+function chartTr(o){
+  const W=640,H=230,pl=44,pr=14,pt=14,pb=32;
+  const vals=o.flatMap(x=>[x.TS,x.TE,x.tgt]).filter(isFinite);
+  const ymax=Math.max(1,Math.ceil(Math.max(...vals)*1.15*2)/2);
+  const X=i=>pl+i*(W-pl-pr)/5,Y=v=>pt+(H-pt-pb)*(1-v/ymax);
+  let g="";
+  for(let k=0;k<=4;k++){const v=ymax*k/4;g+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v,1)}</text>`}
+  o.forEach((x,i)=>g+=`<text x="${X(i)}" y="${H-12}" text-anchor="middle">${fb(x.f)} Hz</text>`);
+  const line=(k,col,dash)=>{const pts=o.map((x,i)=>isFinite(x[k])?`${X(i)},${Y(x[k])}`:null).filter(Boolean);return pts.length?`<polyline fill="none" stroke="${col}" stroke-width="2" ${dash?'stroke-dasharray="5 4"':""} points="${pts.join(" ")}"/>`:""};
+  const dots=o.map((x,i)=>`<circle cx="${X(i)}" cy="${Y(x.TS)}" r="4" fill="${x.ok===false?"var(--bad)":"var(--accent)"}"/>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Temps de réverbération par bande d'octave" style="width:100%;max-width:700px;margin-top:12px">${g}${line("tgt","var(--warn)",1)}${line("TE","var(--muted)",1)}${line("TS","var(--accent)")}${dots}
+  <text x="${pl}" y="${pt-2}" style="fill:var(--ink)">Tr (s)</text></svg>
+  <div class="hint" style="margin-top:0">Trait plein : Tr Sabine · tirets gris : Eyring · tirets orange : objectif · point rouge : bande non conforme.</div>`;
+}
+
+/* ===================== MODULE 2 : équipements en local ===================== */
+function roomBands(){ // renvoie, pour les 8 bandes, A (m²) et S (m²)
+  const L=S.loc;
+  if(L.link){const r=calcRev().out;const m=[0,0,1,2,3,4,5,5];return B8.map((f,j)=>({A:r[m[j]].Atot,S:r[m[j]].St}))}
+  const c=sound(20),V=num(L.V),Ss=num(L.S),m=[0,0,1,2,3,4,5,5];
+  return B8.map((f,j)=>({A:(24*Math.log(10)/c)*V/num(L.Tr[m[j]]),S:Ss}));
+}
+function calcLoc(){
+  const rb=roomBands();
+  const Rc=rb.map(b=>{const ab=Math.min(b.A/b.S,0.99);return b.A/(1-ab)});
+  const src=S.loc.sources.map(s=>{
+    const Q=num(s.Q),r=num(s.r),dir=Q/(4*Math.PI*r*r);
+    if(s.mode==="global"){const Rm=(Rc[3]+Rc[4])/2;const LpA=num(s.LwA)+10*L10(dir+4/Rm);return {LpA,oct:null}}
+    const oct=B8.map((f,j)=>num(s.Lw[j])+10*L10(dir+4/Rc[j]));
+    return {oct,LpA:toA(oct)};
+  });
+  const octTot=B8.map((f,j)=>dBsum(src.filter(x=>x.oct).map(x=>x.oct[j])));
+  const LpA=dBsum(src.map(x=>x.LpA));
+  const rc=Math.sqrt(2*Rc[4]/(16*Math.PI));
+  return {Rc,src,octTot,LpA,rc,rb};
+}
+function viewLoc(){
+  const L=S.loc;
+  return `
+<div class="card">
+  <h2>Local de réception</h2>
+  <p class="hint">Calcule le niveau sonore produit dans un local par un ou plusieurs équipements (pompes, CTA, déshumidificateur, bouches…) à partir de leur puissance acoustique Lw. Formule du champ direct + réverbéré.</p>
+  <label class="chk" for="cb-link"><input type="checkbox" id="cb-link" data-cb="loc.link" data-a="re"${L.link?" checked":""}> Utiliser le local du module 1 (${esc(S.rev.nom)})</label>
+  ${L.link?"":`<div class="grid" style="margin-top:10px">${field("Volume V (m³)","loc.V")}${field("Surface totale des parois S (m²)","loc.S")}</div>
+  <h3>Tr mesuré ou estimé du local (s)</h3>
+  <div class="tw"><table><thead><tr>${B6.map(f=>`<th>${f} Hz</th>`).join("")}</tr></thead><tbody><tr>${B6.map((f,j)=>`<td>${inN(`loc.Tr.${j}`,60)}</td>`).join("")}</tr></tbody></table></div>`}
+  <div class="grid" style="margin-top:10px">${field("Objectif dans le local (dB(A))","loc.objectif")}</div>
+</div>
+<div class="card">
+  <h2>Sources</h2>
+  <p class="hint">Lw par bande d'octave (dB, non pondéré) relevé sur la fiche technique du fabricant. Si tu n'as que le Lw global en dB(A), passe la ligne en « Lw(A) global » (calcul moins précis). Q : 1 = source en l'air au centre du local, 2 = posée au sol ou contre un mur, 4 = dans un angle sol-mur, 8 = dans un coin.</p>
+  <div class="tw"><table>
+  <thead><tr><th class="l">Source</th><th class="l">Donnée</th>${B8.map(f=>`<th>Lw ${fb(f)}</th>`).join("")}<th>Lw(A) global</th><th>Q</th><th>r (m)</th><th></th></tr></thead>
+  <tbody>${L.sources.map((s,i)=>`<tr><td class="l">${inT(`loc.sources.${i}.nom`)}</td><td class="l">${sel(`loc.sources.${i}.mode`,[["spec","Spectre"],["global","Lw(A) global"]],"re")}</td>${B8.map((f,j)=>`<td>${s.mode==="spec"?inN(`loc.sources.${i}.Lw.${j}`,52):"—"}</td>`).join("")}<td>${s.mode==="global"?inN(`loc.sources.${i}.LwA`,58):`<span class="num" id="lwa-${i}"></span>`}</td><td>${sel(`loc.sources.${i}.Q`,[["1","1"],["2","2"],["4","4"],["8","8"]])}</td><td>${inN(`loc.sources.${i}.r`,52)}</td><td><button class="x" data-a="delL" data-i="${i}" aria-label="Supprimer la source">✕</button></td></tr>`).join("")}</tbody></table></div>
+  <div class="row"><button data-a="addL">+ Ajouter une source</button></div>
+</div>
+<div class="card" id="o-loc"></div>`;
+}
+function outLoc(){
+  const r=calcLoc(),L=S.loc,obj=num(L.objectif),ok=r.LpA<=obj;
+  L.sources.forEach((s,i)=>{const e=document.getElementById("lwa-"+i);if(e)e.textContent=fmt(toA(s.Lw),1)});
+  return `<h2>Résultats</h2>
+<div class="res">
+  ${kpi("Niveau total dans le local",fmt(r.LpA,1)+" dB(A)",`objectif ${fmt(obj,0)} dB(A)`,ok?"ok":"bad")}
+  ${kpi("Marge",fmt(obj-r.LpA,1)+" dB",ok?"objectif respecté":"réduction à apporter",ok?"ok":"bad")}
+  ${kpi("Distance critique à 1 kHz (Q = 2)",fmt(r.rc,1)+" m","au-delà, le champ réverbéré domine")}
+</div>
+<h3>Détail</h3>
+<div class="tw"><table>
+<thead><tr><th class="l">Bande (Hz)</th>${B8.map(f=>`<th>${f}</th>`).join("")}<th>dB(A)</th></tr></thead>
+<tbody>
+<tr><td class="l">A du local (m²)</td>${r.rb.map(b=>`<td class="num">${fmt(b.A,0)}</td>`).join("")}<td></td></tr>
+<tr><td class="l">Constante de local R (m²)</td>${r.Rc.map(x=>`<td class="num">${fmt(x,0)}</td>`).join("")}<td></td></tr>
+${L.sources.map((s,i)=>`<tr><td class="l">${esc(s.nom)}</td>${B8.map((f,j)=>`<td class="num">${r.src[i].oct?fmt(r.src[i].oct[j],1):"—"}</td>`).join("")}<td class="num">${fmt(r.src[i].LpA,1)}</td></tr>`).join("")}
+<tr class="tot"><td class="l">Total Lp (dB)</td>${r.octTot.map(x=>`<td class="num">${fmt(x,1)}</td>`).join("")}<td class="num">${fmt(r.LpA,1)}</td></tr>
+</tbody></table></div>
+<p class="note"><b>Limites :</b> les bandes 63 Hz et 8 kHz reprennent l'absorption des bandes 125 Hz et 4 kHz. Le calcul ne prend pas en compte les transmissions solidiennes (vibrations des pompes et des tuyauteries) : prévois plots antivibratiles, manchettes souples et colliers isolés, ils pèsent souvent plus que le bruit aérien.</p>`;
+}
+
+/* ===================== MODULE 3 : voisinage ===================== */
+// Propagation extérieure d'une source (Lw par octave) jusqu'au récepteur du module 3
+function propExt(Lw,Q,r,ecran,delta,att){
+  const V=S.vois,c=340;
+  return B8.map((f,j)=>{
+    let Lp=num(Lw[j])+10*L10(num(Q))-20*L10(num(r))-11-alphaAir(f,num(V.T),num(V.HR))*num(r);
+    let Db=0;if(ecran){const lam=c/f,d=Math.max(0,num(delta)||0);Db=Math.min(20,10*L10(3+20*d/lam))}
+    Lp-=Db+(att?(num(att[j])||0):0);
+    if(V.recepteur==="int")Lp-=num(V.facade[j])||0;
+    return Lp;
+  });
+}
+// Piquages CTA rejetant à l'extérieur (module Pièges à son), piège retenu déduit s'il est validé
+function ctaExtSources(){
+  const out=[];
+  S.pas.ctas.forEach(c=>c.piq.forEach(p=>{
+    if(!p.on||p.dest!=="ext")return;
+    const base=B8.map((f,j)=>num(p.Lw[j])-(num(p.nat[j])||0)-(p.sil.use?(num(p.sil.IL[j])||0):0));
+    const oct=propExt(base,p.Q,p.r,p.ecran,p.delta,null);
+    out.push({nom:`${c.nom} – ${p.type}${p.sil.use?" (avec piège)":" (sans piège)"}`,oct,LpA:toA(oct),on:true,cta:true});
+  }));
+  return out;
+}
+function calcVois(withCta=true){
+  const V=S.vois;
+  const aa=B8.map(f=>alphaAir(f,num(V.T),num(V.HR)));
+  const src=V.sources.map(s=>{const oct=propExt(s.Lw,s.Q,s.r,s.ecran,s.delta,s.att);return {oct,LpA:toA(oct),on:s.on}});
+  const ctaSrc=withCta?ctaExtSources():[];
+  const act=src.filter(x=>x.on).concat(ctaSrc);
+  const oct=B8.map((f,j)=>dBsum(act.map(x=>x.oct[j])));
+  const LpA=dBsum(act.map(x=>x.LpA));
+  const res=num(V.LresA),amb=dBsum([res,LpA]),E=amb-res;
+  const C=corrDuree(V.duree),Elim=(V.periode==="jour"?5:3)+C;
+  const seuil=V.recepteur==="int"?25:30;
+  const recherche=amb>seuil;
+  const Lmax=res+10*L10(Math.pow(10,Elim/10)-1);
+  let spec=null;
+  if(V.recepteur==="int"&&V.useResOct){
+    spec=B8.map((f,j)=>{if(j===0||j===7)return null;const rj=num(V.resOct[j]),aj=dBsum([rj,oct[j]]);const e=aj-rj,lim=(f<=250)?7:5;return {e,lim,ok:e<=lim}});
+  }
+  return {aa,src,ctaSrc,oct,LpA,res,amb,E,C,Elim,seuil,recherche,Lmax,spec};
+}
+function viewVois(){
+  const V=S.vois;
+  return `
+<div class="card">
+  <h2>Point de réception et critères</h2>
+  <p class="hint">Vérifie l'émergence du bruit des installations techniques (CTA, PAC, aéroréfrigérants, extracteurs) chez le voisin, selon les articles R1336-6 à R1336-8 du Code de la santé publique. Le bruit résiduel se mesure sur site, sans les installations en fonctionnement, sur la période la plus défavorable (souvent la nuit).</p>
+  <div class="grid">
+    <label class="f" for="i-vois-recepteur">Point de réception${sel("vois.recepteur",[["ext","Extérieur (jardin, limite de propriété, façade)"],["int","Intérieur pièce principale du logement"]],"re")}</label>
+    <label class="f" for="i-vois-periode">Période${sel("vois.periode",[["jour","Jour (7 h – 22 h) : 5 dB(A)"],["nuit","Nuit (22 h – 7 h) : 3 dB(A)"]])}</label>
+    <label class="f" for="i-vois-duree">Durée cumulée de fonctionnement${sel("vois.duree",DUREES.map(d=>[d[0],`${d[0]} (terme correctif +${d[1]})`]))}</label>
+    ${field("Bruit résiduel LAeq ou L50 (dB(A))","vois.LresA")}
+    ${field("Température air (°C)","vois.T")}${field("Humidité relative (%)","vois.HR")}
+  </div>
+  ${V.recepteur==="int"?`
+  <h3>Réception intérieure</h3>
+  <p class="hint">Indique l'isolement de la façade du logement par bande (fenêtre ouverte ou fermée selon le cas étudié ; les deux situations sont visées par le texte). Le résiduel par octave sert à vérifier l'émergence spectrale.</p>
+  <label class="chk" for="cb-ro"><input type="checkbox" id="cb-ro" data-cb="vois.useResOct" data-a="re"${V.useResOct?" checked":""}> Je dispose du résiduel par bande d'octave (émergence spectrale)</label>
+  <div class="tw" style="margin-top:8px"><table><thead><tr><th class="l"></th>${B8.map(f=>`<th>${f}</th>`).join("")}</tr></thead><tbody>
+    <tr><td class="l">Isolement façade (dB)</td>${B8.map((f,j)=>`<td>${inN(`vois.facade.${j}`,52)}</td>`).join("")}</tr>
+    ${V.useResOct?`<tr><td class="l">Résiduel intérieur (dB)</td>${B8.map((f,j)=>`<td>${inN(`vois.resOct.${j}`,52)}</td>`).join("")}</tr>`:""}
+  </tbody></table></div>`:""}
+</div>
+<div class="card">
+  <h2>Sources extérieures</h2>
+  <p class="hint">Saisis ici les sources autres que les gaines de CTA (PAC, aéroréfrigérants, bruit rayonné par les caissons). Les piquages air neuf et rejet des CTA sont saisis dans l'onglet « Pièges à son CTA » et ajoutés automatiquement au calcul. r : distance source → récepteur (m). Q : 1 = source en hauteur dégagée, 2 = posée sur toiture ou au sol, 4 = contre une façade, 8 = dans un angle. Écran : coche si un acrotère, un mur ou un écran masque la source, et saisis la différence de marche δ (module 4). Atténuation : silencieux, capotage, grille acoustique (dB par bande, donnée fabricant).</p>
+  <div class="tw"><table>
+  <thead><tr><th>Actif</th><th class="l">Source</th>${B8.map(f=>`<th>Lw ${fb(f)}</th>`).join("")}<th>Lw(A)</th><th>Q</th><th>r (m)</th><th>Écran</th><th>δ (m)</th><th></th></tr></thead>
+  <tbody>${V.sources.map((s,i)=>`<tr><td style="text-align:center"><input type="checkbox" id="cb-von${i}" aria-label="Source active" data-cb="vois.sources.${i}.on"${s.on?" checked":""} style="width:auto"></td><td class="l">${inT(`vois.sources.${i}.nom`)}</td>${B8.map((f,j)=>`<td>${inN(`vois.sources.${i}.Lw.${j}`,52)}</td>`).join("")}<td class="num" id="vlwa-${i}"></td><td>${sel(`vois.sources.${i}.Q`,[["1","1"],["2","2"],["4","4"],["8","8"]])}</td><td>${inN(`vois.sources.${i}.r`,52)}</td><td style="text-align:center"><input type="checkbox" id="cb-vec${i}" aria-label="Écran" data-cb="vois.sources.${i}.ecran" style="width:auto"${s.ecran?" checked":""}></td><td>${inN(`vois.sources.${i}.delta`,52)}</td><td><button class="x" data-a="delV" data-i="${i}" aria-label="Supprimer la source">✕</button></td></tr>
+  <tr><td></td><td class="l" style="color:var(--muted);font-size:12px">↳ atténuation silencieux / capotage (dB)</td>${B8.map((f,j)=>`<td>${inN(`vois.sources.${i}.att.${j}`,52)}</td>`).join("")}<td colspan="6"></td></tr>`).join("")}</tbody></table></div>
+  <div class="row"><button data-a="addV">+ Ajouter une source</button></div>
+</div>
+<div class="card" id="o-vois"></div>`;
+}
+function outVois(){
+  const r=calcVois(),V=S.vois;
+  V.sources.forEach((s,i)=>{const e=document.getElementById("vlwa-"+i);if(e)e.textContent=fmt(toA(s.Lw),1)});
+  const okE=!r.recherche||r.E<=r.Elim;
+  const okS=!r.spec||!r.recherche||r.spec.every(x=>!x||x.ok);
+  const ok=okE&&okS;
+  return `<h2>Résultats</h2>
+<div class="res">
+  ${kpi("Bruit particulier au récepteur",fmt(r.LpA,1)+" dB(A)","somme des sources actives")}
+  ${kpi("Bruit ambiant calculé",fmt(r.amb,1)+" dB(A)",`résiduel ${fmt(r.res,1)} dB(A)`)}
+  ${kpi("Émergence globale",fmt(r.E,1)+" dB(A)",`limite ${fmt(r.Elim,0)} dB(A) = ${V.periode==="jour"?5:3} + ${r.C}`,!r.recherche?"":(okE?"ok":"bad"))}
+  ${kpi("Verdict",!r.recherche?pill("na","Émergence non recherchée"):(ok?pill("ok","Conforme"):pill("bad","Non conforme")),!r.recherche?`ambiant ≤ ${r.seuil} dB(A)`:(ok?"":"à traiter"),!r.recherche?"":(ok?"ok":"bad"))}
+  ${kpi("Bruit particulier maxi admissible",fmt(r.Lmax,1)+" dB(A)","toutes sources confondues")}
+  ${kpi("Marge disponible",fmt(r.Lmax-r.LpA,1)+" dB",r.Lmax-r.LpA>=3?"confortable":(r.Lmax-r.LpA>=0?"faible : garde 3 dB de sécurité":"dépassement"),r.Lmax-r.LpA>=3?"ok":(r.Lmax-r.LpA>=0?"warn":"bad"))}
+</div>
+<h3>Contribution des sources au récepteur</h3>
+<div class="tw"><table>
+<thead><tr><th class="l">Bande (Hz)</th>${B8.map(f=>`<th>${f}</th>`).join("")}<th>dB(A)</th></tr></thead>
+<tbody>
+<tr><td class="l">Absorption air (dB/km)</td>${r.aa.map(x=>`<td class="num">${fmt(x*1000,1)}</td>`).join("")}<td></td></tr>
+${V.sources.map((s,i)=>`<tr${s.on?"":' style="opacity:.5"'}><td class="l">${esc(s.nom)}${s.on?"":" (arrêt)"}</td>${r.src[i].oct.map(x=>`<td class="num">${fmt(x,1)}</td>`).join("")}<td class="num">${fmt(r.src[i].LpA,1)}</td></tr>`).join("")}
+${r.ctaSrc.map(s=>`<tr><td class="l">${esc(s.nom)} <span class="pill na">onglet Pièges</span></td>${s.oct.map(x=>`<td class="num">${fmt(x,1)}</td>`).join("")}<td class="num">${fmt(s.LpA,1)}</td></tr>`).join("")}
+<tr class="tot"><td class="l">Bruit particulier</td>${r.oct.map(x=>`<td class="num">${fmt(x,1)}</td>`).join("")}<td class="num">${fmt(r.LpA,1)}</td></tr>
+${r.spec?`<tr><td class="l">Émergence spectrale (dB)</td>${r.spec.map(x=>`<td class="num">${x?fmt(x.e,1):"—"}</td>`).join("")}<td></td></tr>
+<tr><td class="l">Limite / statut</td>${r.spec.map(x=>`<td>${x?(x.ok?pill("ok",x.lim):pill("bad",x.lim)):""}</td>`).join("")}<td></td></tr>`:""}
+</tbody></table></div>
+<p class="note"><b>Hypothèses du calcul :</b> propagation en champ libre (divergence sphérique, Lp = Lw + 10·log Q − 20·log r − 11), absorption de l'air ISO 9613-1, écran par la formule de diffraction simple (10·log(3 + 20·δ/λ), plafonnée à 20 dB). L'effet de sol, les réflexions sur les façades voisines et la météo ne sont pas pris en compte : un écart de ±3 dB avec la réalité est courant. Une émergence à moins de 3 dB de la limite doit être considérée comme à risque.</p>`;
+}
+
+/* ===================== MODULE 4 : calculs dB ===================== */
+function viewCalc(){
+  return `
+<div class="two">
+<div class="card"><h2>Addition de niveaux</h2>
+  <p class="hint">Niveaux séparés par « ; » (ex. plusieurs équipements au même point).</p>
+  ${field("Niveaux (dB)","calc.add",1)}
+  <div class="res" id="o-add"></div>
+</div>
+<div class="card"><h2>Correction de bruit de fond</h2>
+  <p class="hint">Isole le niveau d'une source à partir d'une mesure source en marche et du bruit de fond. Écart inférieur à 3 dB : résultat peu fiable.</p>
+  <div class="grid">${field("Mesure avec source (dB)","calc.tot")}${field("Bruit de fond seul (dB)","calc.fond")}</div>
+  <div class="res" id="o-fond"></div>
+</div>
+<div class="card"><h2>Spectre → dB(A)</h2>
+  <div class="tw"><table><thead><tr>${B8.map(f=>`<th>${f}</th>`).join("")}</tr></thead><tbody><tr>${B8.map((f,j)=>`<td>${inN(`calc.oct.${j}`,52)}</td>`).join("")}</tr></tbody></table></div>
+  <div class="res" id="o-oct"></div>
+</div>
+<div class="card"><h2>Niveau à une autre distance</h2>
+  <p class="hint">Champ libre : −6 dB par doublement de distance.</p>
+  <div class="grid">${field("Lp mesuré (dB)","calc.Lp1")}${field("à la distance r1 (m)","calc.r1")}${field("distance cherchée r2 (m)","calc.r2")}</div>
+  <div class="res" id="o-dist"></div>
+</div>
+<div class="card"><h2>Lw → Lp extérieur</h2>
+  <div class="grid">${field("Lw (dB ou dB(A))","calc.lw")}${field("Directivité Q","calc.q")}${field("Distance r (m)","calc.rr")}</div>
+  <div class="res" id="o-lwlp"></div>
+</div>
+<div class="card"><h2>Différence de marche d'un écran δ</h2>
+  <p class="hint">Distances horizontales et hauteurs par rapport au même niveau de référence. Résultat à reporter dans la colonne δ du module 3.</p>
+  <div class="grid">${field("Hauteur source hs (m)","calc.hs")}${field("Hauteur récepteur hr (m)","calc.hr")}${field("Hauteur sommet écran he (m)","calc.he")}${field("Distance source → écran (m)","calc.ds")}${field("Distance écran → récepteur (m)","calc.dr")}</div>
+  <div class="res" id="o-delta"></div>
+</div>
+</div>`;
+}
+function outCalc(){
+  const C=S.calc,set=(id,h)=>{const e=document.getElementById(id);if(e)e.innerHTML=h};
+  const lv=String(C.add).split(/[;\n]/).map(num).filter(isFinite);
+  set("o-add",kpi("Somme",fmt(dBsum(lv),1)+" dB",`${lv.length} niveaux`)+kpi("Moyenne énergétique",fmt(dBmean(lv),1)+" dB"));
+  const d=num(C.tot)-num(C.fond),Ls=10*L10(Math.pow(10,num(C.tot)/10)-Math.pow(10,num(C.fond)/10));
+  set("o-fond",kpi("Niveau de la source seule",d>0?fmt(Ls,1)+" dB":"—",`écart ${fmt(d,1)} dB`,d<3?"bad":(d<10?"warn":"ok")));
+  set("o-oct",kpi("Niveau pondéré A",fmt(toA(C.oct),1)+" dB(A)")+kpi("Niveau linéaire",fmt(dBsum(C.oct),1)+" dB"));
+  set("o-dist",kpi("Lp à r2",fmt(num(C.Lp1)-20*L10(num(C.r2)/num(C.r1)),1)+" dB"));
+  set("o-lwlp",kpi("Lp à r",fmt(num(C.lw)+10*L10(num(C.q))-20*L10(num(C.rr))-11,1)+" dB","sans écran ni absorption de l'air"));
+  const hs=num(C.hs),hr=num(C.hr),he=num(C.he),ds=num(C.ds),dr=num(C.dr);
+  const a=Math.hypot(ds,he-hs),b=Math.hypot(dr,he-hr),dd=Math.hypot(ds+dr,hs-hr),del=a+b-dd;
+  const vis=(he-hs)/ds<(hr-hs)/(ds+dr);
+  set("o-delta",kpi("δ = a + b − d",fmt(del,3)+" m",vis?"le récepteur voit la source : écran peu efficace":"la source est masquée",vis?"warn":"ok")+kpi("Atténuation à 500 Hz",fmt(Math.min(20,10*L10(3+20*Math.max(0,del)/(340/500))),1)+" dB","diffraction simple"));
+}
+
+/* ===================== MODULE ★ : pièges à son CTA ===================== */
+// Courbes NR : L = A + B·NR (coefficients usuels, 63 Hz à 8 kHz)
+const NRA=[35.4,22,12,4.2,0,-3.5,-6.1,-8],NRB=[0.79,0.87,0.93,0.974,1,1.015,1.025,1.03];
+const nrOf=oct=>Math.max(...oct.map((L,j)=>(L-NRA[j])/NRB[j]));
+// α indicatif d'un baffle en laine minérale selon son épaisseur (mm)
+const ALPHA_BAF={100:[0.10,0.25,0.60,0.90,1,1,1,1],200:[0.20,0.50,0.90,1,1,1,1,1],300:[0.30,0.70,1,1,1,1,1,1]};
+const PIQ_TYPES=["Soufflage","Reprise","Air neuf","Rejet"];
+const DEST={hall:"Hall (onglet 1)",local:"Local (onglet 2)",ext:"Extérieur / voisin (onglet 3)"};
+function roomR(bands){return bands.map(b=>{const ab=Math.min(b.A/b.S,0.99);return b.A/(1-ab)})}
+// plafond c tel que la somme des bandes plafonnées vaut le budget (dB(A)) : minimise l'atténuation totale
+function capFor(LA,budget){let lo=-60,hi=160;for(let k=0;k<60;k++){const m=(lo+hi)/2;const t=dBsum(LA.map(x=>Math.min(x,m)));if(t>budget)hi=m;else lo=m}return lo}
+function extBudget(){
+  const v=calcVois(false);
+  const other=dBsum(v.src.filter(x=>x.on).map(x=>x.LpA));
+  const lim=v.Lmax-num(S.pas.marge);
+  const rest=isFinite(other)?Math.pow(10,lim/10)-Math.pow(10,other/10):Math.pow(10,lim/10);
+  return {Lmax:v.Lmax,other,budget:rest>0?10*L10(rest):-Infinity,recherche:v.recherche};
+}
+function calcPas(){
+  const P=S.pas,m=[0,0,1,2,3,4,5,5];
+  const rv=calcRev().out;
+  const Rh=roomR(B8.map((f,j)=>({A:rv[m[j]].Atot,S:rv[m[j]].St})));
+  const Rl=roomR(roomBands());
+  const eb=extBudget();
+  const paths=[];
+  P.ctas.forEach((c,ci)=>c.piq.forEach((p,pi)=>{
+    const base=B8.map((f,j)=>num(p.Lw[j])-(num(p.nat[j])||0));
+    let Lp;
+    if(p.dest==="ext")Lp=propExt(base,p.Q,p.r,p.ecran,p.delta,null);
+    else{const R=p.dest==="hall"?Rh:Rl,N=Math.max(1,num(p.N)||1),r=num(p.r),Q=num(p.Q);Lp=base.map((L,j)=>L+10*L10(Q/(N*4*Math.PI*r*r)+4/R[j]))}
+    paths.push({ci,pi,c,p,Lp});
+  }));
+  const groups={hall:[],local:[],ext:[]};paths.forEach(x=>{if(x.p.on)groups[x.p.dest].push(x)});
+  const marge=num(P.marge);
+  paths.forEach(x=>{
+    const g=groups[x.p.dest],n=Math.max(1,g.length),split=10*L10(n);
+    let req;
+    if(x.p.dest==="ext"){
+      const b=eb.budget-split;
+      if(!eb.recherche)req=B8.map(()=>0);
+      else if(!isFinite(b))req=B8.map(()=>Infinity);
+      else{const LA=x.Lp.map((L,j)=>L+AW[j]),cap=capFor(LA,b);req=LA.map(L=>Math.max(0,L-cap))}
+      x.target=b;
+    }else{
+      const t=P[x.p.dest];
+      if(t.type==="NR"){const nr=num(t.val);req=x.Lp.map((L,j)=>Math.max(0,L-(NRA[j]+NRB[j]*nr-split-marge)))}
+      else{const b=num(t.val)-split-marge,LA=x.Lp.map((L,j)=>L+AW[j]),cap=capFor(LA,b);req=LA.map(L=>Math.max(0,L-cap))}
+    }
+    x.req=req;x.need=x.p.on&&req.some(v=>v>0.5);
+    // pré-dimensionnement indicatif (Piening modifiée, baffles parallèles)
+    const s=num(P.s)/1000,d=num(P.d),al=ALPHA_BAF[d]||ALPHA_BAF[200];
+    const perM=al.map(a=>1.05*Math.pow(a,1.4)*2/s);
+    let Lm=0;for(let j=1;j<=5;j++){if(isFinite(req[j]))Lm=Math.max(Lm,req[j]/perM[j]);else Lm=Infinity}
+    x.Lest=!x.need?0:(isFinite(Lm)?Math.max(0.6,Math.ceil(Lm/0.3)*0.3):Infinity);
+    x.ILest=perM.map((a,j)=>Math.min(50,a*(isFinite(x.Lest)?x.Lest:0)));
+    x.ILest[6]=NaN;x.ILest[7]=NaN;
+    const ratio=s/(s+d/1000);
+    x.Sface=(num(x.c.debit)/3600)/(num(P.vmax)*ratio);
+    x.ratio=ratio;
+    const IL=x.p.sil.use?x.p.sil.IL.map(v=>num(v)||0):B8.map(()=>0);
+    x.after=x.Lp.map((L,j)=>L-IL[j]);
+    x.candOk=x.p.sil.use?req.every((v,j)=>IL[j]>=v-0.05):null;
+  });
+  // vérification par destination avec les pièges retenus
+  const chk={};
+  ["hall","local"].forEach(k=>{const g=groups[k];if(!g.length)return;const t=P[k];
+    const oct=B8.map((f,j)=>dBsum(g.map(x=>x.after[j])));
+    const val=t.type==="NR"?nrOf(oct):toA(oct);chk[k]={val,ok:val<=num(t.val),type:t.type,lim:num(t.val),oct}});
+  if(groups.ext.length){const v=calcVois(true);chk.ext={E:v.E,Elim:v.Elim,ok:!v.recherche||v.E<=v.Elim,LpA:v.LpA,Lmax:v.Lmax,recherche:v.recherche}}
+  return {paths,groups,chk,eb};
+}
+function viewPas(){
+  const P=S.pas;
+  const tsel=(k)=>sel(`pas.${k}.type`,[["dBA","dB(A) global"],["NR","Courbe NR"]]);
+  return `
+<div class="card">
+  <h2>Pièges à son des CTA</h2>
+  <p class="hint">Pour chaque CTA, saisis le Lw par octave de chaque piquage (côté gaine, au point de fonctionnement) et indique où débouche le réseau. L'outil calcule l'atténuation que doit apporter le piège à son dans chaque bande, en reprenant les objectifs des autres onglets : volume et absorption du hall (onglet 1), du local (onglet 2), émergence chez le voisin (onglet 3). Il propose ensuite un pré-dimensionnement et prépare la fiche de consultation des fournisseurs.</p>
+  <div class="grid">
+    <label class="f" for="i-pas-hall-type">Objectif hall : type${tsel("hall")}</label>${field(P.hall.type==="NR"?"Objectif hall (NR)":"Objectif hall (dB(A))","pas.hall.val")}
+    <label class="f" for="i-pas-local-type">Objectif local : type${tsel("local")}</label>${field(P.local.type==="NR"?"Objectif local (NR)":"Objectif local (dB(A))","pas.local.val")}
+    ${field("Marge de sécurité (dB)","pas.marge")}
+  </div>
+  <h3>Hypothèses de pré-dimensionnement des pièges</h3>
+  <div class="grid">
+    <label class="f" for="i-pas-d">Épaisseur des baffles (mm)${sel("pas.d",[["100","100"],["200","200"],["300","300"]])}</label>
+    ${field("Entrefer entre baffles (mm)","pas.s")}
+    ${field("Vitesse maxi dans les passages (m/s)","pas.vmax")}
+    ${field("Perte de charge maxi admise (Pa)","pas.dpmax",1)}
+  </div>
+  <p class="note"><b>Hypothèses à confirmer :</b> la vitesse maxi dans les passages et la perte de charge admise sont des choix de projet (bruit régénéré par le piège, impact sur le ventilateur) ; fixe-les avec ton responsable ou d'après le CCTP. Les objectifs de niveau dans le hall et les locaux viennent du programme ou du CCTP : l'outil ne les invente pas.</p>
+</div>
+${P.ctas.map((c,ci)=>`
+<div class="card">
+  <div class="row" style="margin-top:0;justify-content:space-between"><h2 style="margin:0">CTA ${ci+1}</h2><button class="x" data-a="delC" data-i="${ci}">Supprimer la CTA</button></div>
+  <div class="grid" style="margin-top:8px">${field("Désignation",`pas.ctas.${ci}.nom`,1)}${field("Débit (m³/h)",`pas.ctas.${ci}.debit`)}</div>
+  ${c.piq.map((p,pi)=>{const b=`pas.ctas.${ci}.piq.${pi}`;return `
+  <h3><label class="chk" for="cb-p${ci}-${pi}" style="color:var(--accent);font-weight:600"><input type="checkbox" id="cb-p${ci}-${pi}" data-cb="${b}.on" data-a="re"${p.on?" checked":""}> Piquage ${esc(p.type)}</label></h3>
+  ${p.on?`<div class="grid">
+    <label class="f" for="i-${b.replace(/\./g,'-')}-dest">Débouche dans${sel(`${b}.dest`,Object.entries(DEST),"re")}</label>
+    ${p.dest!=="ext"?field("Nombre de bouches",`${b}.N`):""}
+    ${field(p.dest==="ext"?"Distance au récepteur r (m)":"Distance bouche → occupant r (m)",`${b}.r`)}
+    <label class="f" for="i-${b.replace(/\./g,'-')}-Q">Directivité Q${sel(`${b}.Q`,[["1","1"],["2","2"],["4","4"],["8","8"]])}</label>
+    ${p.dest==="ext"?`<label class="chk" for="cb-e${ci}-${pi}"><input type="checkbox" id="cb-e${ci}-${pi}" data-cb="${b}.ecran" data-a="re"${p.ecran?" checked":""}> Écran / acrotère</label>${p.ecran?field("δ (m)",`${b}.delta`):""}`:""}
+  </div>
+  <div class="tw" style="margin-top:8px"><table>
+    <thead><tr><th class="l">Bande (Hz)</th>${B8.map(f=>`<th>${f}</th>`).join("")}<th>Global</th></tr></thead>
+    <tbody>
+      <tr><td class="l">Lw piquage (dB)</td>${B8.map((f,j)=>`<td>${inN(`${b}.Lw.${j}`,52)}</td>`).join("")}<td class="num" id="pw-${ci}-${pi}"></td></tr>
+      <tr><td class="l">Atténuation naturelle réseau (dB)</td>${B8.map((f,j)=>`<td>${inN(`${b}.nat.${j}`,52)}</td>`).join("")}<td></td></tr>
+      <tr><td class="l"><label class="chk" for="cb-s${ci}-${pi}"><input type="checkbox" id="cb-s${ci}-${pi}" data-cb="${b}.sil.use"${p.sil.use?" checked":""}> IL du piège retenu (dB)</label></td>${B8.map((f,j)=>`<td>${inN(`${b}.sil.IL.${j}`,52)}</td>`).join("")}<td></td></tr>
+    </tbody></table></div>
+  <div class="grid" style="margin-top:8px">${field("Référence du piège retenu",`${b}.sil.ref`,1)}</div>
+  <div class="row"><button data-a="fillEst" data-c="${ci}" data-q="${pi}">Pré-remplir avec l'estimation</button></div>
+  <div id="op-${ci}-${pi}"></div>`:""}`}).join("")}
+</div>`).join("")}
+<div class="row"><button data-a="addC">+ Ajouter une CTA</button></div>
+<div class="card" id="o-pas"></div>`;
+}
+function outPas(){
+  const r=calcPas(),P=S.pas;
+  r.paths.forEach(x=>{
+    const e=document.getElementById(`pw-${x.ci}-${x.pi}`);if(e)e.textContent=fmt(toA(x.p.Lw),1)+" dB(A)";
+    const o=document.getElementById(`op-${x.ci}-${x.pi}`);if(!o||!x.p.on)return;
+    o.innerHTML=`<div class="tw" style="margin-top:8px"><table>
+      <thead><tr><th class="l">Résultat (Hz)</th>${B8.map(f=>`<th>${f}</th>`).join("")}<th>Global</th></tr></thead><tbody>
+      <tr><td class="l">Lp sans piège ${x.p.dest==="ext"?"au récepteur":"dans le local"}</td>${x.Lp.map(v=>`<td class="num">${fmt(v,1)}</td>`).join("")}<td class="num">${fmt(toA(x.Lp),1)} dB(A)</td></tr>
+      <tr class="tot"><td class="l">IL requis</td>${x.req.map(v=>`<td class="num">${isFinite(v)?fmt(Math.ceil(v),0):"∞"}</td>`).join("")}<td>${x.need?pill("warn","piège nécessaire"):pill("ok","pas de piège")}</td></tr>
+      <tr><td class="l">IL estimé (L = ${isFinite(x.Lest)?fmt(x.Lest,1):"—"} m)</td>${x.ILest.map(v=>`<td class="num">${!x.need?"—":(isNaN(v)?"catalogue":fmt(v,0))}</td>`).join("")}<td></td></tr>
+      ${x.p.sil.use?`<tr><td class="l">Lp avec piège retenu</td>${x.after.map(v=>`<td class="num">${fmt(v,1)}</td>`).join("")}<td>${x.candOk?pill("ok","IL suffisant"):pill("bad","IL insuffisant")}</td></tr>`:""}
+      </tbody></table></div>`;
+  });
+  const act=r.paths.filter(x=>x.p.on);
+  const nb=act.filter(x=>x.need).length;
+  const ck=r.chk;
+  const verd=(k,lab)=>{if(!ck[k])return "";const c=ck[k];
+    if(k==="ext")return kpi(lab,!c.recherche?pill("na","non recherchée"):(c.ok?pill("ok","Conforme"):pill("bad","Non conforme")),`émergence ${fmt(c.E,1)} / ${fmt(c.Elim,0)} dB(A), pièges retenus inclus`,!c.recherche?"":(c.ok?"ok":"bad"));
+    return kpi(lab,c.type==="NR"?"NR "+fmt(c.val,0):fmt(c.val,1)+" dB(A)",`objectif ${c.type==="NR"?"NR "+fmt(c.lim,0):fmt(c.lim,0)+" dB(A)"}, pièges retenus inclus`,c.ok?"ok":"bad")};
+  return `<h2>Synthèse : pièges à son à prévoir</h2>
+<div class="res">
+  ${kpi("Piquages nécessitant un piège",`${nb} / ${act.length}`,"marge de "+fmt(num(P.marge),0)+" dB incluse",nb?"warn":"ok")}
+  ${verd("hall","Hall avec pièges retenus")}${verd("local","Local avec pièges retenus")}${verd("ext","Voisinage avec pièges retenus")}
+  ${r.groups.ext.length?kpi("Budget voisinage par piquage",isFinite(r.eb.budget)?fmt(r.eb.budget-10*L10(r.groups.ext.length),1)+" dB(A)":"aucun",isFinite(r.eb.budget)?`bruit particulier maxi ${fmt(r.eb.Lmax,1)} dB(A), autres sources ${fmt(r.eb.other,1)} dB(A)`:"les autres sources de l'onglet 3 dépassent déjà la limite",isFinite(r.eb.budget)?"":"bad"):""}
+</div>
+<div class="tw" style="margin-top:12px"><table>
+<thead><tr><th class="l">CTA / piquage</th><th class="l">Débouche</th>${B8.map(f=>`<th>IL ${fb(f)}</th>`).join("")}<th>Longueur estimée</th><th>Section frontale mini</th><th class="l">Piège retenu</th></tr></thead>
+<tbody>${act.map(x=>`<tr><td class="l">${esc(x.c.nom)} – ${esc(x.p.type)}</td><td class="l">${DEST[x.p.dest].split(" (")[0]}</td>${x.req.map(v=>`<td class="num">${isFinite(v)?fmt(Math.ceil(v),0):"∞"}</td>`).join("")}<td class="num">${!x.need?"—":(isFinite(x.Lest)?fmt(x.Lest,1)+" m"+(x.Lest>2.4?" "+pill("bad","trop long"):""):"∞")}</td><td class="num">${x.need?fmt(x.Sface,2)+" m²":"—"}</td><td class="l">${x.p.sil.use?(x.candOk?pill("ok","OK"):pill("bad","insuffisant"))+" "+esc(x.p.sil.ref):(x.need?pill("warn","à choisir"):"")}</td></tr>`).join("")}</tbody></table></div>
+<div class="row"><button class="pri" data-a="cpFiche">Copier la fiche de consultation fournisseurs</button><span class="flash" id="fl-fiche"></span></div>
+${act.some(x=>x.need&&x.Lest>2.4)?`<p class="note"><b>Piège trop long (> 2,4 m) :</b> le niveau à la source est trop élevé pour un seul piège. Leviers : réduire la vitesse du ventilateur la nuit ou choisir une CTA plus silencieuse, augmenter l’absorption du local (onglet 1), éloigner les bouches des occupants, prévoir deux pièges en série (un près de la CTA, un en traversée de local) ou des baffles plus épais.</p>`:""}
+<p class="hint">La fiche se colle dans Excel ou dans un mail : débit, IL minimal par octave, section disponible, perte de charge et vitesse maxi pour chaque piège.</p>
+<p class="note"><b>Comment lire :</b> l'IL requis est l'atténuation minimale du piège dans chaque bande d'octave (marge incluse). Quand plusieurs piquages débouchent au même endroit, l'objectif est partagé à parts égales (−3 dB pour 2 piquages). Pour un objectif en dB(A), l'outil demande l'atténuation la plus faible possible : il ne réduit que les bandes dominantes. La longueur estimée est calée sur 125 Hz à 2 kHz : à 63 Hz, un piège à baffles atténue peu, un besoin fort dans cette bande se traite à la source (vitesse du ventilateur, choix de la machine) ou par un piège à baffles épais. <b>La longueur et l'IL estimés</b> viennent d'une formule simplifiée (Piening modifiée, baffles en laine minérale) : ce sont des ordres de grandeur. La sélection définitive se fait sur catalogue fournisseur, en vérifiant l'IL dynamique, la perte de charge et le bruit régénéré. Ressaisis ensuite l'IL du catalogue dans la ligne « IL du piège retenu » et coche-la pour valider.</p>
+<p class="note"><b>Hypothèse prudente :</b> l'atténuation naturelle du réseau (coudes, longueurs de gaine, réflexion en bout de gaine) est à 0 par défaut, ce qui surdimensionne un peu les pièges. Tu peux la saisir si tu la connais (logiciel fournisseur ou note de calcul aéraulique). Le bruit rayonné par les parois des gaines et par le caisson de la CTA n'est pas traité par un piège : saisis-le comme source dans l'onglet 3 ou 2.</p>`;
+}
+function fiche(){
+  const r=calcPas(),P=S.pas,t="\t";
+  const L=[["Fiche de consultation – pièges à son",S.meta.projet],["Affaire",S.meta.affaire],[],
+    ["CTA","Piquage","Débit (m³/h)",...B8.map(f=>"IL mini "+f+" Hz (dB)"),"Section frontale mini (m²)","Vitesse maxi passages (m/s)","Perte de charge maxi (Pa)","Longueur indicative (m)"]];
+  r.paths.filter(x=>x.p.on&&x.need).forEach(x=>L.push([x.c.nom,x.p.type,fmt(num(x.c.debit),0),...x.req.map(v=>isFinite(v)?fmt(Math.ceil(v),0):"∞"),fmt(x.Sface,2),fmt(num(P.vmax),1),P.dpmax||"à définir",isFinite(x.Lest)?fmt(x.Lest,1):"> 3"]));
+  L.push([],["IL = perte d'insertion dynamique, au débit nominal. Merci de fournir : dimensions, IL par octave, perte de charge, bruit régénéré par octave."]);
+  return L.map(x=>x.join(t)).join("\n");
+}
+
+/* ===================== MODULE 5 : projet ===================== */
+function viewProj(){
+  return `
+<div class="card"><h2>Identification</h2>
+  <div class="grid">${field("Projet","meta.projet",1)}${field("N° d'affaire","meta.affaire",1)}${field("Établi par","meta.auteur",1)}${field("Date","meta.date",1)}</div>
+  <label class="f" for="i-meta-notes" style="margin-top:10px">Hypothèses / remarques<textarea id="i-meta-notes" data-p="meta.notes" data-s="1" style="min-height:70px;font-family:var(--f-body)">${esc(S.meta.notes)}</textarea></label>
+</div>
+<div class="card"><h2>Récapitulatif pour Excel</h2>
+  <p class="hint">Copie le tableau puis colle-le dans Excel (cellule A1) : il arrive en colonnes.</p>
+  <div class="row"><button class="pri" data-a="cpTsv">Copier le récapitulatif</button><span class="flash" id="fl-tsv"></span></div>
+  <textarea id="tsv" readonly aria-label="Récapitulatif" style="margin-top:8px"></textarea>
+</div>
+<div class="card"><h2>Sauvegarder / ouvrir un projet</h2>
+  <p class="hint">Les saisies sont gardées dans ce navigateur. Pour archiver une étude dans le dossier de l'affaire, copie le fichier projet et colle-le dans un fichier texte nommé par exemple <span class="num">AFF123_acoustique.json</span>. Pour la rouvrir, choisis ce fichier ou colle son contenu ci-dessous.</p>
+  <div class="row"><button data-a="cpJson">Copier le fichier projet</button><span class="flash" id="fl-json"></span></div>
+  <textarea id="json-io" aria-label="Fichier projet" placeholder="Colle ici le contenu d'un fichier projet…" style="margin-top:8px"></textarea>
+  <div class="row"><button data-a="load">Ouvrir le projet collé</button><label class="f" for="file-in" style="flex-direction:row;align-items:center;gap:8px">ou un fichier : <input type="file" id="file-in" accept=".json,.txt" style="width:auto"></label><button data-a="reset">Recharger l'exemple</button><span class="flash" id="fl-load"></span></div>
+</div>`;
+}
+function tsv(){
+  const r=calcRev(),l=calcLoc(),v=calcVois(),m=S.meta,t="\t",n=x=>fmt(x,2);
+  const L=[];
+  L.push(["Projet",m.projet],["Affaire",m.affaire],["Établi par",m.auteur],["Date",m.date],[]);
+  L.push(["1. RÉVERBÉRATION",S.rev.nom],["Volume (m³)",fmt(num(S.rev.V),0)],["Bande (Hz)",...B6],["Tr Sabine (s)",...r.out.map(x=>n(x.TS))],["Tr Eyring (s)",...r.out.map(x=>n(x.TE))],["Objectif (s)",...r.out.map(x=>n(x.tgt))],["Tr moyen 500-2000 Hz (s)",n(r.mid)],[]);
+  L.push(["2. ÉQUIPEMENTS EN LOCAL"],...S.loc.sources.map((s,i)=>[s.nom,fmt(l.src[i].LpA,1)+" dB(A)"]),["Total",fmt(l.LpA,1)+" dB(A)"],["Objectif",fmt(num(S.loc.objectif),0)+" dB(A)"],[]);
+  L.push(["3. VOISINAGE",S.vois.recepteur==="int"?"Réception intérieure":"Réception extérieure",S.vois.periode],...S.vois.sources.map((s,i)=>[s.nom+(s.on?"":" (arrêt)"),fmt(v.src[i].LpA,1)+" dB(A)"]),["Bruit particulier",fmt(v.LpA,1)+" dB(A)"],["Bruit résiduel",fmt(v.res,1)+" dB(A)"],["Bruit ambiant",fmt(v.amb,1)+" dB(A)"],["Émergence",fmt(v.E,1)+" dB(A)"],["Limite",fmt(v.Elim,0)+" dB(A)"],["Bruit particulier maxi",fmt(v.Lmax,1)+" dB(A)"],[]);
+  const pz=calcPas();L.push(["★ PIÈGES À SON CTA","Piquage","Débouche",...B8.map(f=>"IL requis "+f),"Longueur estimée (m)","Piège retenu"],...pz.paths.filter(x=>x.p.on).map(x=>[x.c.nom,x.p.type,DEST[x.p.dest],...x.req.map(v=>isFinite(v)?Math.ceil(v):"∞"),x.need&&isFinite(x.Lest)?fmt(x.Lest,1):"",x.p.sil.use?x.p.sil.ref:""]),[]);
+  L.push(["Résultats de pré-dimensionnement, à valider par une personne compétente."]);
+  return L.map(x=>x.join(t)).join("\n");
+}
+
+/* ===================== Rendu & événements ===================== */
+const VIEWS={pieges:[viewPas,()=>{document.getElementById("o-pas").innerHTML=outPas()}],
+  reverberation:[viewRev,()=>{document.getElementById("o-rev").innerHTML=outRev()}],
+  equipement:[viewLoc,()=>{document.getElementById("o-loc").innerHTML=outLoc()}],
+  voisinage:[viewVois,()=>{document.getElementById("o-vois").innerHTML=outVois()}],
+  calculs:[viewCalc,outCalc],
+  projet:[viewProj,()=>{const t=document.getElementById("tsv");if(t)t.value=tsv()}]};
+let cur="pieges";
+function render(){
+  for(const k in VIEWS){const el=document.getElementById("m-"+k);el.classList.toggle("on",k===cur)}
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",a.dataset.t===cur));
+  document.getElementById("m-"+cur).innerHTML=VIEWS[cur][0]();
+  update();
+}
+function update(){
+  const af=document.activeElement,id=af&&af.id;
+  try{VIEWS[cur][1]()}catch(e){console.error(e)}
+  if(id&&document.activeElement!==af){const n=document.getElementById(id);if(n)n.focus()}
+  save();
+}
+function route(){const h=location.hash.slice(1);cur=VIEWS[h]?h:"pieges";render()}
+window.addEventListener("hashchange",route);
+
+const main=document.querySelector("main");
+main.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.p&&t.tagName!=="SELECT"){
+    if(t.dataset.s)setP(t.dataset.p,t.value);
+    else{const v=num(t.value);setP(t.dataset.p,isFinite(v)?v:t.value)}
+    update();
+  }
+});
+main.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.tagName==="SELECT"&&t.dataset.p){
+    const p=t.dataset.p;let v=t.value;
+    if(/\.Q$|trait\.support$/.test(p))v=Number(v);
+    setP(p,v);
+    if(t.dataset.a==="mat"){const i=p.split(".")[2];const m=MAT[v];if(m&&m.a)S.rev.surfaces[i].a=m.a.slice()}
+    if(t.dataset.a==="obj"){const i=p.split(".")[2];const o=OBJ[v];if(o&&o.A)S.rev.objets[i].A=o.A.slice()}
+    if(t.dataset.a==="tmat"){const m=MAT[v];if(m&&m.a)S.rev.trait.a=m.a.slice()}
+    if(t.dataset.a)render();else update();
+  }
+  if(t.dataset.cb){setP(t.dataset.cb,t.checked);if(t.dataset.a)render();else update()}
+  if(t.id==="file-in"&&t.files[0]){const fr=new FileReader();fr.onload=()=>loadJson(fr.result);fr.readAsText(t.files[0])}
+});
+function flash(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;setTimeout(()=>{e.textContent=""},3000)}}
+async function copy(txt,id){try{await navigator.clipboard.writeText(txt);flash(id,"Copié.")}catch(e){flash(id,"Copie refusée : sélectionne le texte et fais Ctrl+C.")}}
+function loadJson(txt){
+  try{const o=JSON.parse(txt);if(!o.rev||!o.vois||!o.loc)throw 0;const base=exemple();S=Object.assign(base,o);if(!o.pas)S.pas=base.pas;save();flash("fl-load","Projet ouvert.");render()}
+  catch(e){flash("fl-load","Fichier non reconnu : vérifie qu'il vient bien de cet outil.")}
+}
+main.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-a]");if(!b)return;const a=b.dataset.a,i=Number(b.dataset.i),R=S.rev;
+  if(a==="vol"){R.V=+(num(R.L)*num(R.l)*num(R.H)).toFixed(1);render()}
+  if(a==="gen"){const L=num(R.L),l=num(R.l),H=num(R.H);R.V=+(L*l*H).toFixed(1);
+    R.surfaces=[{nom:"Plan d'eau",mat:"eau",S:Math.round(L*l*0.45),a:MAT.eau.a.slice()},{nom:"Plages",mat:"carrelage",S:Math.round(L*l*0.55),a:MAT.carrelage.a.slice()},{nom:"Plafond / toiture",mat:"bacplein",S:Math.round(L*l),a:MAT.bacplein.a.slice()},{nom:"Murs",mat:"beton",S:Math.round(2*(L+l)*H*0.75),a:MAT.beton.a.slice()},{nom:"Vitrages",mat:"vitrage2",S:Math.round(2*(L+l)*H*0.25),a:MAT.vitrage2.a.slice()}];
+    R.trait.support=2;render();flash("fl-rev","Parois générées : ajuste la part plan d'eau / plages et murs / vitrages.")}
+  if(a==="addS"){R.surfaces.push({nom:"Nouvelle surface",mat:"beton",S:0,a:MAT.beton.a.slice()});render()}
+  if(a==="delS"){R.surfaces.splice(i,1);if(R.trait.support>=R.surfaces.length)R.trait.support=-1;render()}
+  if(a==="addO"){R.objets.push({nom:"Baffles",typ:"baffle",n:0,A:OBJ.baffle.A.slice()});render()}
+  if(a==="delO"){R.objets.splice(i,1);render()}
+  if(a==="apply"){const r=calcRev();if(!isFinite(r.Sreq))return;const Sq=Math.ceil(r.Sreq),sup=R.surfaces[R.trait.support];
+    if(sup)sup.S=Math.max(0,num(sup.S)-Sq);
+    R.surfaces.push({nom:"Traitement : "+MAT[R.trait.mat].n,mat:R.trait.mat,S:Sq,a:R.trait.a.slice()});render()}
+  if(a==="addL"){S.loc.sources.push({nom:"Nouvelle source",mode:"spec",Lw:[70,70,70,70,70,70,70,70],LwA:75,Q:2,r:3});render()}
+  if(a==="delL"){S.loc.sources.splice(i,1);render()}
+  if(a==="addV"){S.vois.sources.push({nom:"Nouvelle source",on:true,Lw:[75,75,75,75,75,75,75,75],Q:2,r:30,ecran:false,delta:0,att:[0,0,0,0,0,0,0,0]});render()}
+  if(a==="delV"){S.vois.sources.splice(i,1);render()}
+  if(a==="addC"){S.pas.ctas.push({nom:"Nouvelle CTA",debit:5000,piq:PIQ_TYPES.map(t=>({type:t,on:true,dest:(t==="Soufflage"||t==="Reprise")?"local":"ext",Lw:[75,75,75,75,75,75,75,75],nat:[0,0,0,0,0,0,0,0],N:1,r:3,Q:2,ecran:false,delta:0,sil:{use:false,ref:"",IL:[0,0,0,0,0,0,0,0]}}))});render()}
+  if(a==="delC"){S.pas.ctas.splice(i,1);render()}
+  if(a==="fillEst"){const ci=Number(b.dataset.c),pi=Number(b.dataset.q);const x=calcPas().paths.find(y=>y.ci===ci&&y.pi===pi);
+    if(x&&x.need&&isFinite(x.Lest)){const p=S.pas.ctas[ci].piq[pi];p.sil.IL=x.ILest.map(v=>isNaN(v)?0:Math.floor(v));p.sil.use=true;p.sil.ref=`Estimation : baffles ${S.pas.d} mm, entrefer ${S.pas.s} mm, L = ${fmt(x.Lest,1)} m – IL 4 et 8 kHz à compléter, valeurs à remplacer par le catalogue`;render()}}
+  if(a==="cpFiche")copy(fiche(),"fl-fiche");
+  if(a==="cpTsv")copy(tsv(),"fl-tsv");
+  if(a==="cpJson"){const t=JSON.stringify(S,null,1);document.getElementById("json-io").value=t;copy(t,"fl-json")}
+  if(a==="load")loadJson(document.getElementById("json-io").value);
+  if(a==="reset"){S=exemple();save();render();flash("fl-load","Exemple rechargé.")}
+});
+route();
+</script>
+</body>
+</html>

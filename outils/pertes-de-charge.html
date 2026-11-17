@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pertes de charge EAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : en-tête projet + onglets ; récap du réseau en tête, puis une carte par section avec sa table de lignes */
+:root{
+  --bg:#f2f5f7; --panel:#ffffff; --ink:#132029; --muted:#5b6b74; --line:#d4dde2;
+  --accent:#1d5fa8; --accent-soft:#e6eef8; --air:#1d5fa8; --eau:#0f7b84;
+  --ok:#1f7a45; --ok-bg:#e3f4ea; --warn:#9a6200; --warn-bg:#fdf1db; --bad:#b3261e; --bad-bg:#fbe5e3;
+  --input:#fbfdfe; --override:#fff6dc;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f171d; --panel:#16222a; --ink:#e2ebf0; --muted:#93a5ae; --line:#2a3a44;
+    --accent:#6aa8ee; --accent-soft:#1a2c3e; --air:#6aa8ee; --eau:#4cc3cc;
+    --ok:#6fd39a; --ok-bg:#163327; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86; --bad-bg:#3d1c1a;
+    --input:#111c23; --override:#3a3216; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f171d; --panel:#16222a; --ink:#e2ebf0; --muted:#93a5ae; --line:#2a3a44;
+  --accent:#6aa8ee; --accent-soft:#1a2c3e; --air:#6aa8ee; --eau:#4cc3cc;
+  --ok:#6fd39a; --ok-bg:#163327; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86; --bad-bg:#3d1c1a;
+  --input:#111c23; --override:#3a3216; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:13.5px/1.45 var(--f-body)}
+.wrap{max-width:1500px;margin:0 auto;padding:0 18px}
+header{padding-top:16px}
+.top{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between}
+h1{font:600 22px/1.2 var(--f-display);margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+.meta{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px;margin-top:12px}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin-top:14px;border-bottom:1px solid var(--line)}
+nav a{padding:9px 14px;text-decoration:none;color:var(--muted);font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;margin-bottom:-1px}
+nav a:hover{color:var(--ink)}
+nav a.on{background:var(--panel);border-color:var(--line);color:var(--accent)}
+nav a[data-t="air"].on{color:var(--air)} nav a[data-t="eau"].on{color:var(--eau)}
+main{padding-top:14px;padding-bottom:40px;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.card h2{font:600 17px/1.25 var(--f-display);margin:0}
+.card h3{font:600 14px/1.3 var(--f-body);margin:0}
+.hint{color:var(--muted);font-size:12.5px;margin:4px 0 0;max-width:110ch}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+input,select{font:13px var(--f-body);color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:5px;padding:5px 7px;width:100%}
+input.n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+input.ov{background:var(--override)}
+input:focus-visible,select:focus-visible,button:focus-visible,nav a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px;margin-top:10px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:500 13px var(--f-body);border:1px solid var(--accent);background:var(--panel);color:var(--accent);border-radius:5px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+button.pri{background:var(--accent);color:var(--panel)}
+button.ghost{border-color:var(--line);color:var(--muted)}
+button.ic{border-color:transparent;background:transparent;color:var(--muted);padding:2px 5px;font-size:14px}
+button.ic:hover{color:var(--accent)} button.ic.del:hover{color:var(--bad)}
+button:disabled{opacity:.45;cursor:default}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;margin-top:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:4px 5px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+th{font-weight:600;color:var(--muted);font-size:11.5px;background:var(--accent-soft);position:sticky;top:0}
+td.l,th.l{text-align:left}
+td input.n{width:68px;padding:3px 5px}
+td input.s{width:58px;padding:3px 5px}
+td input.t{width:70px;padding:3px 5px}
+td select.ty{min-width:230px;padding:3px 5px}
+td select.fo{width:52px;padding:3px 3px}
+td .dims{display:flex;gap:3px;align-items:center}
+td.na{color:var(--muted);text-align:center}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.res{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.tot{font-weight:600}
+td.vw{color:var(--warn);font-weight:600}
+tr.sub td{background:var(--accent-soft);font-weight:600}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:8px 11px}
+.kpi.ok{border-left-color:var(--ok)} .kpi.bad{border-left-color:var(--bad)} .kpi.warn{border-left-color:var(--warn)}
+.kpi .k{font-size:12px;color:var(--muted)} .kpi .v{font:500 20px/1.2 var(--f-mono);margin-top:2px} .kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.secbars{display:flex;height:12px;border-radius:6px;overflow:hidden;margin-top:12px;background:var(--accent-soft)}
+.secbars div{height:100%}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.sechead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.sechead input{font:600 14px var(--f-body);max-width:320px}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:6px 10px;background:var(--warn-bg);border-radius:4px;max-width:120ch}
+.note b{color:var(--ink)}
+.flash{font-size:12.5px;color:var(--ok);min-height:1em}
+.flash.err{color:var(--bad)}
+.netbar{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.netbar label.f{min-width:260px}
+.help h3{margin-top:14px} .help p,.help li{max-width:95ch}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="top">
+    <div>
+      <h1>Calcul des pertes de charge – aéraulique et hydraulique</h1>
+      <div class="sub">Eau Air Système · Groupe BC · Pré-dimensionnement des réseaux. <b>Résultats à valider par une personne compétente.</b></div>
+    </div>
+    <div class="bar">
+      <button class="pri" data-a="xlsx" id="b-xlsx">Exporter Excel</button>
+      <button class="pri" data-a="pdf" id="b-pdf">PDF du réseau affiché</button>
+      <button data-a="pdfall" id="b-pdfall">PDF de tous les réseaux</button>
+      <button class="ghost" data-a="save" id="b-save">Enregistrer le projet</button>
+      <label class="f" for="file-in" style="flex-direction:row;align-items:center;gap:6px"><button class="ghost" type="button" data-a="openf">Ouvrir un projet</button><input type="file" id="file-in" accept=".json" style="display:none"></label>
+    </div>
+  </div>
+  <div class="flash" id="fl" role="status"></div>
+  <div class="meta">
+    <label class="f" for="m-projet">Projet<input id="m-projet" data-m="projet"></label>
+    <label class="f" for="m-affaire">N° d'affaire<input id="m-affaire" data-m="affaire"></label>
+    <label class="f" for="m-auteur">Établi par<input id="m-auteur" data-m="auteur"></label>
+    <label class="f" for="m-date">Date<input id="m-date" data-m="date"></label>
+    <label class="f" for="m-indice">Indice<input id="m-indice" data-m="indice"></label>
+  </div>
+  <nav id="tabs">
+    <a href="#air" data-t="air">Aéraulique</a>
+    <a href="#eau" data-t="eau">Hydraulique</a>
+    <a href="#biblio" data-t="biblio">Bibliothèque des éléments</a>
+    <a href="#aide" data-t="aide">Mode d'emploi</a>
+  </nav>
+</header>
+<main class="wrap" id="main"></main>
+<datalist id="dl-none"></datalist>
+<div id="datalists"></div>
+
+<script src="../vendor/xlsx.full.min.js"></script>
+<script src="../vendor/jspdf.umd.min.js"></script>
+<script src="../vendor/jspdf.plugin.autotable.min.js"></script>
+<script>
+"use strict";
+/* ============ Bibliothèques par défaut (valeurs INDICATIVES, modifiables dans l'onglet Bibliothèque) ============
+   k : lin = tronçon (rugosité e en mm) · sing = singularité (ζ) · exp/con = élargissement / rétrécissement brusque (Borda, ζ calculé)
+       fixe = ΔP donnée fabricant (Pa en aéraulique, kPa en hydraulique) · kv = organe défini par son Kv (hydraulique) · mark = repère sans perte */
+const LIB_AIR=[
+  {id:"g_galva",cat:"Gaines",n:"Gaine acier galvanisé",k:"lin",e:0.15},
+  {id:"g_spiral",cat:"Gaines",n:"Gaine spiralée / alu lisse",k:"lin",e:0.05},
+  {id:"g_pvc",cat:"Gaines",n:"Gaine PVC / PP",k:"lin",e:0.01},
+  {id:"g_souple",cat:"Gaines",n:"Gaine souple (tendue)",k:"lin",e:1.5},
+  {id:"c_c90_15",cat:"Coudes",n:"Gaine circulaire – coude 90° (R/D 1,5)",k:"sing",z:0.25},
+  {id:"c_c90_1",cat:"Coudes",n:"Gaine circulaire – coude 90° (R/D 1)",k:"sing",z:0.35},
+  {id:"c_c45",cat:"Coudes",n:"Gaine circulaire – coude 45°",k:"sing",z:0.15},
+  {id:"c_r90",cat:"Coudes",n:"Gaine rectangulaire – coude 90°",k:"sing",z:0.30},
+  {id:"c_r45",cat:"Coudes",n:"Gaine rectangulaire – coude 45°",k:"sing",z:0.15},
+  {id:"c_r90a",cat:"Coudes",n:"Coude 90° à angle vif avec aubes",k:"sing",z:0.35},
+  {id:"c_r90v",cat:"Coudes",n:"Coude 90° à angle vif sans aubes",k:"sing",z:1.20},
+  {id:"t_piq",cat:"Tés et dérivations",n:"Piquage",k:"sing",z:1.30},
+  {id:"t_der",cat:"Tés et dérivations",n:"Té – passage en dérivation",k:"sing",z:1.00},
+  {id:"t_dir",cat:"Tés et dérivations",n:"Té – passage direct",k:"sing",z:0.20},
+  {id:"t_cul",cat:"Tés et dérivations",n:"Culotte / Y",k:"sing",z:0.40},
+  {id:"r_aug",cat:"Changements de section",n:"Augmentation progressive (avec amorce)",k:"sing",z:0.20},
+  {id:"r_red",cat:"Changements de section",n:"Réduction progressive",k:"sing",z:0.05},
+  {id:"r_trans",cat:"Changements de section",n:"Transformation à section constante",k:"sing",z:0.10},
+  {id:"r_exp",cat:"Changements de section",n:"Élargissement brusque (ζ calculé)",k:"exp"},
+  {id:"r_con",cat:"Changements de section",n:"Rétrécissement brusque (ζ calculé)",k:"con"},
+  {id:"a_gp02",cat:"Grilles et entrées",n:"Grille de protection – passage libre 0,2",k:"sing",z:17},
+  {id:"a_gp03",cat:"Grilles et entrées",n:"Grille de protection – passage libre 0,3",k:"sing",z:6.5},
+  {id:"a_gp04",cat:"Grilles et entrées",n:"Grille de protection – passage libre 0,4",k:"sing",z:3},
+  {id:"a_gp05",cat:"Grilles et entrées",n:"Grille de protection – passage libre 0,5",k:"sing",z:1.7},
+  {id:"a_gp06",cat:"Grilles et entrées",n:"Grille de protection – passage libre 0,6",k:"sing",z:1},
+  {id:"a_gp07",cat:"Grilles et entrées",n:"Grille de protection – passage libre 0,7",k:"sing",z:0.6},
+  {id:"a_ent",cat:"Grilles et entrées",n:"Entrée de gaine à bord vif",k:"sing",z:0.5},
+  {id:"a_sor",cat:"Grilles et entrées",n:"Sortie libre de gaine",k:"sing",z:1.0},
+  {id:"a_reg",cat:"Accessoires",n:"Registre de réglage ouvert",k:"sing",z:0.3},
+  {id:"a_cf",cat:"Accessoires",n:"Clapet coupe-feu",k:"sing",z:0.3},
+  {id:"a_manch",cat:"Accessoires",n:"Manchette souple",k:"sing",z:0.1},
+  {id:"f_pas",cat:"Équipements (ΔP fabricant)",n:"Piège à son",k:"fixe",dp:50},
+  {id:"f_filt",cat:"Équipements (ΔP fabricant)",n:"Filtre (encrassement de calcul)",k:"fixe",dp:150},
+  {id:"f_bat",cat:"Équipements (ΔP fabricant)",n:"Batterie chaude / froide",k:"fixe",dp:60},
+  {id:"f_bou",cat:"Équipements (ΔP fabricant)",n:"Bouche / diffuseur / grille terminale",k:"fixe",dp:30},
+  {id:"f_ext",cat:"Équipements (ΔP fabricant)",n:"Grille extérieure / pare-pluie",k:"fixe",dp:30},
+  {id:"f_regm",cat:"Équipements (ΔP fabricant)",n:"Régulateur de débit / registre motorisé",k:"fixe",dp:50},
+  {id:"f_autre",cat:"Équipements (ΔP fabricant)",n:"Autre équipement",k:"fixe",dp:0},
+  {id:"m_ecta",cat:"Repères",n:"Entrée CTA",k:"mark"},
+  {id:"m_scta",cat:"Repères",n:"Sortie CTA",k:"mark"},
+  {id:"m_note",cat:"Repères",n:"Commentaire / repère",k:"mark"}
+];
+const LIB_EAU=[
+  {id:"tb_pvc",cat:"Tubes",n:"Tube PVC pression",k:"lin",e:0.007,mat:"pvc"},
+  {id:"tb_pehd",cat:"Tubes",n:"Tube PEHD",k:"lin",e:0.007,mat:"pehd"},
+  {id:"tb_acier",cat:"Tubes",n:"Tube acier noir",k:"lin",e:0.045,mat:"acier"},
+  {id:"tb_galva",cat:"Tubes",n:"Tube acier galvanisé",k:"lin",e:0.15,mat:"acier"},
+  {id:"tb_inox",cat:"Tubes",n:"Tube inox",k:"lin",e:0.015,mat:"inox"},
+  {id:"tb_cu",cat:"Tubes",n:"Tube cuivre",k:"lin",e:0.0015,mat:"cuivre"},
+  {id:"tb_multi",cat:"Tubes",n:"Tube multicouche",k:"lin",e:0.007,mat:"multi"},
+  {id:"r_c90",cat:"Coudes",n:"Coude 90° grand rayon (R = 1,5 D)",k:"sing",z:0.3},
+  {id:"r_c90c",cat:"Coudes",n:"Coude 90° court (PVC collé, fileté)",k:"sing",z:0.75},
+  {id:"r_c45",cat:"Coudes",n:"Coude 45°",k:"sing",z:0.3},
+  {id:"r_tdir",cat:"Tés",n:"Té – passage direct",k:"sing",z:0.4},
+  {id:"r_tder",cat:"Tés",n:"Té – passage en dérivation",k:"sing",z:1.3},
+  {id:"r_red",cat:"Changements de section",n:"Réduction concentrique progressive",k:"sing",z:0.1},
+  {id:"r_exp",cat:"Changements de section",n:"Élargissement brusque (ζ calculé)",k:"exp"},
+  {id:"r_con",cat:"Changements de section",n:"Rétrécissement brusque (ζ calculé)",k:"con"},
+  {id:"v_bs",cat:"Robinetterie",n:"Vanne à boisseau sphérique ouverte",k:"sing",z:0.1},
+  {id:"v_pap",cat:"Robinetterie",n:"Vanne papillon ouverte",k:"sing",z:0.4},
+  {id:"v_op",cat:"Robinetterie",n:"Vanne à opercule ouverte",k:"sing",z:0.2},
+  {id:"v_sou",cat:"Robinetterie",n:"Robinet à soupape ouvert",k:"sing",z:6},
+  {id:"v_cab",cat:"Robinetterie",n:"Clapet anti-retour à battant",k:"sing",z:2},
+  {id:"v_car",cat:"Robinetterie",n:"Clapet anti-retour à ressort",k:"sing",z:3},
+  {id:"v_kv",cat:"Robinetterie",n:"Vanne de réglage / organe (Kv)",k:"kv",kv:100},
+  {id:"e_ent",cat:"Entrées et sorties",n:"Entrée de canalisation à bord vif",k:"sing",z:0.5},
+  {id:"e_sor",cat:"Entrées et sorties",n:"Sortie dans bassin / bâche",k:"sing",z:1.0},
+  {id:"f_pf",cat:"Équipements (ΔP fabricant)",n:"Préfiltre de pompe",k:"fixe",dp:5},
+  {id:"f_fs",cat:"Équipements (ΔP fabricant)",n:"Filtre (à sable, à diatomées…)",k:"fixe",dp:50},
+  {id:"f_ech",cat:"Équipements (ΔP fabricant)",n:"Échangeur",k:"fixe",dp:20},
+  {id:"f_tam",cat:"Équipements (ΔP fabricant)",n:"Filtre à tamis",k:"fixe",dp:5},
+  {id:"f_cpt",cat:"Équipements (ΔP fabricant)",n:"Compteur / débitmètre",k:"fixe",dp:5},
+  {id:"f_bf",cat:"Équipements (ΔP fabricant)",n:"Bonde de fond / skimmer / prise balai",k:"fixe",dp:3},
+  {id:"f_br",cat:"Équipements (ΔP fabricant)",n:"Bouche de refoulement",k:"fixe",dp:5},
+  {id:"f_uv",cat:"Équipements (ΔP fabricant)",n:"Réacteur UV / électrolyseur",k:"fixe",dp:5},
+  {id:"f_autre",cat:"Équipements (ΔP fabricant)",n:"Autre équipement",k:"fixe",dp:0},
+  {id:"m_pa",cat:"Repères",n:"Aspiration pompe",k:"mark"},
+  {id:"m_pr",cat:"Repères",n:"Refoulement pompe",k:"mark"},
+  {id:"m_note",cat:"Repères",n:"Commentaire / repère",k:"mark"}
+];
+// Diamètres intérieurs INDICATIFS (mm) par matériau : à vérifier selon la série et la pression nominale
+const SIZES={
+  pvc:[["PVC d50 PN16",45.2],["PVC d63 PN16",57.0],["PVC d75 PN16",67.8],["PVC d90 PN16",81.4],["PVC d110 PN16",99.4],["PVC d125 PN16",113.0],["PVC d140 PN16",126.6],["PVC d160 PN16",144.6],["PVC d200 PN16",180.8],["PVC d225 PN16",203.4],["PVC d250 PN16",226.2],["PVC d315 PN16",285.0]],
+  pehd:[["PEHD d32 SDR11",26.2],["PEHD d40 SDR11",32.6],["PEHD d50 SDR11",40.8],["PEHD d63 SDR11",51.4],["PEHD d75 SDR11",61.4],["PEHD d90 SDR11",73.6],["PEHD d110 SDR11",90.0],["PEHD d125 SDR11",102.2],["PEHD d160 SDR11",130.8],["PEHD d200 SDR11",163.6]],
+  acier:[["Acier DN15 (21,3×2,6)",16.1],["Acier DN20 (26,9×2,6)",21.7],["Acier DN25 (33,7×3,2)",27.3],["Acier DN32 (42,4×3,2)",36.0],["Acier DN40 (48,3×3,2)",41.9],["Acier DN50 (60,3×3,6)",53.1],["Acier DN65 (76,1×3,6)",68.9],["Acier DN80 (88,9×4,0)",80.9],["Acier DN100 (114,3×4,5)",105.3],["Acier DN125 (139,7×5,0)",129.7],["Acier DN150 (168,3×5,0)",158.3],["Acier DN200 (219,1×5,9)",207.3]],
+  inox:[["Inox DN25 (33,7×2)",29.7],["Inox DN32 (42,4×2)",38.4],["Inox DN40 (48,3×2)",44.3],["Inox DN50 (60,3×2)",56.3],["Inox DN65 (76,1×2)",72.1],["Inox DN80 (88,9×2)",84.9],["Inox DN100 (114,3×2)",110.3],["Inox DN150 (168,3×2,6)",163.1]],
+  cuivre:[["Cuivre 12×1",10],["Cuivre 14×1",12],["Cuivre 16×1",14],["Cuivre 18×1",16],["Cuivre 22×1",20],["Cuivre 28×1",26],["Cuivre 35×1,2",32.6],["Cuivre 42×1,2",39.6],["Cuivre 54×1,5",51]],
+  multi:[["Multicouche 16×2",12],["Multicouche 20×2",16],["Multicouche 26×3",20],["Multicouche 32×3",26],["Multicouche 40×3,5",33],["Multicouche 50×4",42],["Multicouche 63×4,5",54]]
+};
+const MATS={pvc:"PVC pression",pehd:"PEHD",acier:"Acier",inox:"Inox",cuivre:"Cuivre",multi:"Multicouche"};
+
+/* ============ Physique ============ */
+const num=v=>{if(typeof v==="number")return v;if(v==null)return NaN;const x=parseFloat(String(v).replace(",",".").replace(/\s/g,""));return isFinite(x)?x:NaN};
+const fmt=(x,d=1)=>isFinite(x)?x.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
+const G=9.81;
+function airProps(T){const Tk=num(T)+273.15;const rho=101325/(287.05*Tk);const mu=1.458e-6*Math.pow(Tk,1.5)/(Tk+110.4);return {rho,nu:mu/rho}}
+const WT=[5,10,20,30,40,50,60,70,80,90],WR=[1000.0,999.7,998.2,995.7,992.2,988.0,983.2,977.8,971.8,965.3],WN=[1.519,1.307,1.004,0.801,0.658,0.553,0.475,0.413,0.365,0.326];
+function waterProps(T){let t=Math.min(90,Math.max(5,num(T)));let i=0;while(i<WT.length-2&&t>WT[i+1])i++;const f=(t-WT[i])/(WT[i+1]-WT[i]);return {rho:WR[i]+f*(WR[i+1]-WR[i]),nu:(WN[i]+f*(WN[i+1]-WN[i]))*1e-6}}
+// Coefficient de frottement de Darcy : laminaire 64/Re, sinon Colebrook-White résolu par itérations
+function lambda(Re,eps,D){
+  if(!(Re>0))return NaN;
+  if(Re<2300)return 64/Re;
+  const r=eps/D/3.7;let l=0.25/Math.pow(Math.log10(r+5.74/Math.pow(Re,0.9)),2);
+  for(let k=0;k<30;k++){const x=-2*Math.log10(r+2.51/(Re*Math.sqrt(l)));l=1/(x*x)}
+  return l;
+}
+
+/* ============ État ============ */
+const uid=()=>Math.random().toString(36).slice(2,9);
+const L=(t,o)=>Object.assign({id:uid(),t,rep:"",q:null,f:"R",d:null,w:null,h:null,d2:null,w2:null,h2:null,L:null,nb:1,z:null,dp:null,kv:null},o);
+function exemple(){
+  return {
+    meta:{projet:"Exemple – données fictives",affaire:"",auteur:"",date:new Date().toLocaleDateString("fr-FR"),indice:"A"},
+    tab:"air",
+    air:{cur:0,nets:[{id:uid(),nom:"CTA 1 – Administration",equip:"CTA 1",q:3755,T:20,dispo:450,marge:10,vmax:6,sections:[
+      {id:uid(),nom:"Air neuf",lines:[
+        L("a_gp05",{q:7685,w:600,h:600}),
+        L("g_galva",{q:7685,w:600,h:600,L:9.2}),
+        L("t_piq",{q:3755,w:600,h:600}),
+        L("g_galva",{q:3755,w:550,h:350,L:2}),
+        L("c_r90",{q:3755,w:550,h:350}),
+        L("g_galva",{q:3755,w:550,h:350,L:2.5}),
+        L("c_r45",{q:3755,w:550,h:350,nb:2}),
+        L("g_galva",{q:3755,w:550,h:350,L:4.5}),
+        L("r_aug",{q:3755,w:800,h:400}),
+        L("m_ecta",{q:3755,w:800,h:400})]},
+      {id:uid(),nom:"Soufflage",lines:[
+        L("m_scta",{q:3755,w:800,h:400}),
+        L("r_red",{q:3755,w:500,h:400}),
+        L("f_pas",{q:3755,w:500,h:400,dp:70,rep:"PAS 1"}),
+        L("g_galva",{q:3755,w:500,h:400,L:12}),
+        L("c_r90",{q:3755,w:500,h:400,nb:2}),
+        L("a_cf",{q:3755,w:500,h:400}),
+        L("t_dir",{q:3755,w:500,h:300}),
+        L("g_galva",{q:2500,w:500,h:300,L:8}),
+        L("t_der",{q:1250,w:400,h:250}),
+        L("g_galva",{q:1250,w:400,h:250,L:6}),
+        L("c_r90",{q:1250,w:400,h:250}),
+        L("t_piq",{q:250,f:"C",d:200}),
+        L("g_souple",{q:250,f:"C",d:200,L:1.5}),
+        L("f_bou",{q:250,f:"C",d:200,dp:25})]}]}]},
+    eau:{cur:0,nets:[{id:uid(),nom:"Filtration bassin sportif",equip:"Pompe de filtration P1",q:200,T:28,dispo:22,marge:10,vmax:2.5,mat:"pvc",dz:0,sections:[
+      {id:uid(),nom:"Aspiration",lines:[
+        L("f_bf",{q:200,d:203.4,dp:3,nb:1,rep:"Bondes de fond"}),
+        L("tb_pvc",{q:200,d:203.4,L:25}),
+        L("r_c90c",{q:200,d:203.4,nb:3}),
+        L("v_pap",{q:200,d:203.4}),
+        L("f_pf",{q:200,d:203.4,dp:5})]},
+      {id:uid(),nom:"Refoulement",lines:[
+        L("v_cab",{q:200,d:180.8}),
+        L("v_pap",{q:200,d:180.8}),
+        L("tb_pvc",{q:200,d:180.8,L:15}),
+        L("r_c90c",{q:200,d:180.8,nb:4}),
+        L("f_fs",{q:200,d:180.8,dp:50,rep:"Filtres F1/F2"}),
+        L("f_ech",{q:200,d:180.8,dp:20}),
+        L("tb_pvc",{q:200,d:180.8,L:40}),
+        L("r_tder",{q:100,d:144.6}),
+        L("tb_pvc",{q:100,d:144.6,L:20}),
+        L("f_br",{q:100,d:144.6,dp:5,rep:"Bouches de refoulement"})]}]}]},
+    lib:{air:JSON.parse(JSON.stringify(LIB_AIR)),eau:JSON.parse(JSON.stringify(LIB_EAU))}
+  };
+}
+let S;
+try{const r=localStorage.getItem("eas-pdc-v1");S=r?JSON.parse(r):exemple()}catch(e){S=exemple()}
+function save(){try{localStorage.setItem("eas-pdc-v1",JSON.stringify(S))}catch(e){}}
+const libOf=dom=>S.lib[dom];
+const libGet=(dom,id)=>libOf(dom).find(x=>x.id===id)||{id,n:"(élément supprimé)",k:"mark",cat:"?"};
+const curNet=dom=>S[dom].nets[S[dom].cur]||S[dom].nets[0];
+
+/* ============ Calcul d'une ligne ============ */
+function geom(dom,f,d,w,h){
+  if(dom==="air"&&f==="R"){const W=num(w)/1000,H=num(h)/1000;return {A:W*H,Dh:2*W*H/(W+H)}}
+  const D=num(d)/1000;return {A:Math.PI*D*D/4,Dh:D};
+}
+function calcLine(dom,net,l){
+  const e=libGet(dom,l.t),P=dom==="air"?airProps(net.T):waterProps(net.T);
+  const q=num(l.q)/3600,nb=isFinite(num(l.nb))?num(l.nb):1;
+  const g=geom(dom,l.f,l.d,l.w,l.h);
+  const v=q/g.A,Pd=0.5*P.rho*v*v,Re=v*g.Dh/P.nu;
+  const o={e,v,Pd,Re,zeta:NaN,R:NaN,dp:0,lam:NaN};
+  if(e.k==="lin"){const eps=(num(e.e)||0)/1000;o.lam=lambda(Re,eps,g.Dh);o.R=o.lam/g.Dh*Pd;o.dp=o.R*(num(l.L)||0)*nb}
+  else if(e.k==="sing"){o.zeta=isFinite(num(l.z))?num(l.z):num(e.z);o.dp=o.zeta*Pd*nb}
+  else if(e.k==="exp"||e.k==="con"){
+    const g2=geom(dom,l.f,l.d2,l.w2,l.h2);
+    if(e.k==="exp"){o.zeta=Math.pow(1-g.A/g2.A,2);o.dp=(g2.A>g.A?o.zeta:0)*Pd*nb}
+    else{const v2=q/g2.A,Pd2=0.5*P.rho*v2*v2;o.zeta=0.5*(1-g2.A/g.A);o.dp=(g2.A<g.A?o.zeta*Pd2:0)*nb;o.v2=v2}
+  }
+  else if(e.k==="fixe"){const x=isFinite(num(l.dp))?num(l.dp):num(e.dp);o.dp=(dom==="eau"?x*1000:x)*nb}
+  else if(e.k==="kv"){const kv=isFinite(num(l.kv))?num(l.kv):num(e.kv);o.dp=1e5*Math.pow(num(l.q)/kv,2)*(P.rho/1000)*nb}
+  if(!isFinite(o.dp))o.dp=NaN;
+  o.vwarn=isFinite(v)&&e.k!=="mark"&&v>num(net.vmax);
+  o.P=P;
+  return o;
+}
+function calcNet(dom,net){
+  const secs=net.sections.map(s=>{const rows=s.lines.map(l=>calcLine(dom,net,l));const tot=rows.reduce((a,r)=>a+(isFinite(r.dp)?r.dp:0),0);const bad=rows.some(r=>!isFinite(r.dp)&&r.e.k!=="mark");return {s,rows,tot,bad}});
+  const P=dom==="air"?airProps(net.T):waterProps(net.T);
+  const tot=secs.reduce((a,x)=>a+x.tot,0);
+  const dz=dom==="eau"?(num(net.dz)||0)*P.rho*G:0;
+  const retenu=(tot*(1+(num(net.marge)||0)/100))+dz;
+  const dispo=dom==="air"?num(net.dispo):num(net.dispo)*P.rho*G;
+  const nv=secs.reduce((a,x)=>a+x.rows.filter(r=>r.vwarn).length,0);
+  const incomplete=secs.some(x=>x.bad);
+  return {secs,tot,dz,retenu,dispo,ok:isFinite(dispo)?retenu<=dispo:null,nv,incomplete,P};
+}
+const toMCE=(pa,P)=>pa/(P.rho*G);
+
+/* ============ Rendu ============ */
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const vIn=v=>v==null||v===""?"":String(v).replace(".",",");
+const COLORS=["#1d5fa8","#0f7b84","#b5651d","#7b4fa8","#3f8f3a","#a83250","#6b6f12","#4a6577"];
+function typeSelect(dom,l){
+  const cats=[];libOf(dom).forEach(e=>{if(!cats.includes(e.cat))cats.push(e.cat)});
+  return `<select class="ty" data-l="${l.id}" data-f="t" aria-label="Type d'élément">${cats.map(c=>`<optgroup label="${esc(c)}">${libOf(dom).filter(e=>e.cat===c).map(e=>`<option value="${e.id}"${e.id===l.t?" selected":""}>${esc(e.n)}</option>`).join("")}</optgroup>`).join("")}${libOf(dom).some(e=>e.id===l.t)?"":`<option value="${l.t}" selected>(élément supprimé)</option>`}</select>`;
+}
+const nIn=(l,f,cls="n",ph="")=>`<input class="${cls}" data-l="${l.id}" data-f="${f}" value="${esc(vIn(l[f]))}" inputmode="decimal"${ph?` placeholder="${esc(ph)}"`:""} aria-label="${f}">`;
+function dimsCell(dom,net,l,second){
+  const k2=second?"2":"";
+  if(dom==="air"){
+    const shape=second?"":`<select class="fo" data-l="${l.id}" data-f="f" aria-label="Forme"><option value="R"${l.f==="R"?" selected":""}>▭</option><option value="C"${l.f==="C"?" selected":""}>○</option></select>`;
+    return `<div class="dims">${shape}${l.f==="R"?`${nIn(l,"w"+k2,"s","L")}×${nIn(l,"h"+k2,"s","H")}`:`Ø${nIn(l,"d"+k2,"s")}`}</div>`;
+  }
+  const e=libGet(dom,l.t),mat=e.mat||net.mat||"pvc";
+  return `<div class="dims">Ø<input class="s" list="dl-${mat}" data-l="${l.id}" data-f="d${k2}" value="${esc(vIn(l["d"+k2]))}" inputmode="decimal" aria-label="Diamètre intérieur" style="width:70px"></div>`;
+}
+function rowHtml(dom,net,s,l,i){
+  const e=libGet(dom,l.t),k=e.k,na=`<td class="na">—</td>`;
+  const unitFix=dom==="air"?"Pa":"kPa";
+  return `<tr data-row="${l.id}">
+    <td class="num" style="color:var(--muted)">${i+1}</td>
+    <td class="l">${typeSelect(dom,l)}</td>
+    <td class="l">${nIn(l,"rep","t")}</td>
+    <td>${k==="mark"?"":nIn(l,"q")}</td>
+    <td class="l">${k==="mark"&&dom==="eau"?"":dimsCell(dom,net,l,false)}</td>
+    <td class="l">${k==="exp"||k==="con"?dimsCell(dom,net,l,true):`<span style="color:var(--muted)">—</span>`}</td>
+    ${k==="lin"?`<td>${nIn(l,"L")}</td>`:na}
+    ${k==="mark"?na:`<td>${nIn(l,"nb","s")}</td>`}
+    ${k==="sing"?`<td><input class="n${isFinite(num(l.z))?" ov":""}" data-l="${l.id}" data-f="z" value="${esc(vIn(l.z))}" placeholder="${vIn(e.z)}" inputmode="decimal" aria-label="Coefficient zeta" title="Vide = valeur de la bibliothèque"></td>`:(k==="exp"||k==="con"?`<td class="res" id="z-${l.id}"></td>`:na)}
+    ${k==="fixe"?`<td><input class="n${isFinite(num(l.dp))?" ov":""}" data-l="${l.id}" data-f="dp" value="${esc(vIn(l.dp))}" placeholder="${vIn(e.dp)}" inputmode="decimal" aria-label="Perte de charge fabricant en ${unitFix}" title="ΔP fabricant en ${unitFix}"></td>`:(k==="kv"?`<td><input class="n" data-l="${l.id}" data-f="kv" value="${esc(vIn(l.kv))}" placeholder="Kv ${vIn(e.kv)}" inputmode="decimal" aria-label="Kv" title="Kv en m³/h"></td>`:na)}
+    <td class="res" id="v-${l.id}"></td><td class="res" id="r-${l.id}"></td><td class="res" id="pd-${l.id}"></td>
+    <td class="res tot" id="dp-${l.id}"></td>
+    <td class="l" style="white-space:nowrap"><button class="ic" data-a="up" data-l="${l.id}" aria-label="Monter" title="Monter">↑</button><button class="ic" data-a="down" data-l="${l.id}" aria-label="Descendre" title="Descendre">↓</button><button class="ic" data-a="dup" data-l="${l.id}" aria-label="Dupliquer" title="Dupliquer">⧉</button><button class="ic" data-a="ins" data-l="${l.id}" aria-label="Insérer une ligne dessous" title="Insérer dessous">＋</button><button class="ic del" data-a="del" data-l="${l.id}" aria-label="Supprimer" title="Supprimer">✕</button></td>
+  </tr>`;
+}
+function viewNet(dom){
+  const D=S[dom],net=curNet(dom),isAir=dom==="air";
+  const unit=isAir?"Pa":"kPa";
+  return `
+<div class="card">
+  <div class="netbar">
+    <label class="f" for="netsel">Réseau affiché<select id="netsel" data-a="netsel">${D.nets.map((n,i)=>`<option value="${i}"${i===D.cur?" selected":""}>${esc(n.nom)}</option>`).join("")}</select></label>
+    <button data-a="netadd">+ Nouveau réseau</button><button data-a="netdup">Dupliquer</button><button class="ghost" data-a="netdel"${D.nets.length<2?" disabled":""}>Supprimer ce réseau</button>
+  </div>
+  <div class="grid">
+    <label class="f" for="n-nom">Nom du réseau<input id="n-nom" data-n="nom" value="${esc(net.nom)}"></label>
+    <label class="f" for="n-equip">${isAir?"CTA / ventilateur":"Pompe"}<input id="n-equip" data-n="equip" value="${esc(net.equip)}"></label>
+    <label class="f" for="n-q">Débit nominal (m³/h)<input class="n" id="n-q" data-n="q" value="${vIn(net.q)}" inputmode="decimal"></label>
+    <label class="f" for="n-T">Température ${isAir?"de l'air":"de l'eau"} (°C)<input class="n" id="n-T" data-n="T" value="${vIn(net.T)}" inputmode="decimal"></label>
+    <label class="f" for="n-dispo">${isAir?"Pression disponible (Pa)":"HMT disponible pompe (mCE)"}<input class="n" id="n-dispo" data-n="dispo" value="${vIn(net.dispo)}" inputmode="decimal"></label>
+    ${isAir?"":`<label class="f" for="n-dz">Dénivelé géométrique (m)<input class="n" id="n-dz" data-n="dz" value="${vIn(net.dz)}" inputmode="decimal" title="Circuit ouvert : hauteur à vaincre. Circuit fermé : 0."></label>`}
+    <label class="f" for="n-marge">Marge de sécurité (%)<input class="n" id="n-marge" data-n="marge" value="${vIn(net.marge)}" inputmode="decimal"></label>
+    <label class="f" for="n-vmax">Vitesse d'alerte (m/s)<input class="n" id="n-vmax" data-n="vmax" value="${vIn(net.vmax)}" inputmode="decimal"></label>
+    ${isAir?"":`<label class="f" for="n-mat">Matériau par défaut (diamètres proposés)<select id="n-mat" data-n="mat" data-a="re">${Object.entries(MATS).map(([k,v])=>`<option value="${k}"${net.mat===k?" selected":""}>${v}</option>`).join("")}</select></label>`}
+  </div>
+  <div id="recap"></div>
+</div>
+${net.sections.map((s,si)=>`
+<div class="card" data-sec="${s.id}">
+  <div class="sechead">
+    <div class="bar"><span class="pill" style="background:${COLORS[si%COLORS.length]};color:#fff">${si+1}</span><input data-s="${s.id}" value="${esc(s.nom)}" aria-label="Nom de la section"></div>
+    <div class="bar"><span class="num" id="st-${s.id}" style="font-weight:600"></span>
+      <button class="ic" data-a="secup" data-s="${s.id}" title="Monter la section" aria-label="Monter la section">↑</button><button class="ic" data-a="secdown" data-s="${s.id}" title="Descendre la section" aria-label="Descendre la section">↓</button>
+      <button class="ghost" data-a="secdel" data-s="${s.id}">Supprimer la section</button></div>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="l">Élément</th><th class="l">Repère</th><th>Débit (m³/h)</th><th class="l">${isAir?"Section (mm)":"Ø int. (mm)"}</th><th class="l">${isAir?"Section sortie":"Ø sortie"}</th><th>L (m)</th><th>Nb</th><th>ζ</th><th>${isAir?"ΔP fab. (Pa)":"ΔP fab. (kPa) / Kv"}</th><th>v (m/s)</th><th>R (Pa/m)</th><th>Pd (Pa)</th><th>ΔP (Pa)</th><th></th></tr></thead>
+    <tbody>${s.lines.map((l,i)=>rowHtml(dom,net,s,l,i)).join("")}</tbody>
+  </table></div>
+  <div class="bar" style="margin-top:8px">
+    <select id="add-${s.id}" aria-label="Type de la ligne à ajouter" style="max-width:320px">${(()=>{const cats=[];libOf(dom).forEach(e=>{if(!cats.includes(e.cat))cats.push(e.cat)});return cats.map(c=>`<optgroup label="${esc(c)}">${libOf(dom).filter(e=>e.cat===c).map(e=>`<option value="${e.id}">${esc(e.n)}</option>`).join("")}</optgroup>`).join("")})()}</select>
+    <button data-a="add" data-s="${s.id}">+ Ajouter la ligne</button>
+    <span class="hint" style="margin:0">La nouvelle ligne reprend le débit et la section de la dernière ligne.</span>
+  </div>
+</div>`).join("")}
+<div class="bar"><button data-a="secadd">+ Ajouter une section</button><span class="hint" style="margin:0">Exemples : Air neuf, Soufflage, Reprise, Rejet, ou Aspiration / Refoulement.</span></div>
+<p class="note"><b>Rappels :</b> calculer le chemin le plus défavorable (circuit indice), pas l'ensemble des branches. Les ζ et rugosités de la bibliothèque sont des valeurs indicatives : remplace-les par tes valeurs internes ou celles des fabricants. Une cellule ζ ou ΔP fabricant sur fond jaune signale une valeur modifiée pour cette ligne ; vide-la pour revenir à la bibliothèque.</p>`;
+}
+function updateNet(dom){
+  const net=curNet(dom),r=calcNet(dom,net),isAir=dom==="air";
+  const set=(id,t,cls)=>{const e=document.getElementById(id);if(e){e.textContent=t;if(cls!==undefined)e.className=cls}};
+  r.secs.forEach(x=>{
+    x.rows.forEach((o,i)=>{const l=x.s.lines[i],k=o.e.k;
+      set("v-"+l.id,k==="mark"?"":fmt(o.v,2),"res"+(o.vwarn?" vw":""));
+      set("r-"+l.id,k==="lin"?fmt(o.R,2):"","res");
+      set("pd-"+l.id,k==="mark"||k==="fixe"||k==="kv"?"":fmt(o.Pd,1),"res");
+      set("dp-"+l.id,k==="mark"?"":fmt(o.dp,1),"res tot");
+      set("z-"+l.id,fmt(o.zeta,2),"res");
+      const v=document.getElementById("v-"+l.id);if(v)v.title=o.vwarn?`Vitesse supérieure au seuil d'alerte de ${fmt(num(net.vmax),1)} m/s`:"";
+    });
+    set("st-"+x.s.id,isAir?`${fmt(x.tot,1)} Pa`:`${fmt(x.tot/1000,2)} kPa · ${fmt(toMCE(x.tot,r.P),2)} mCE`);
+  });
+  const rc=document.getElementById("recap");if(!rc)return;
+  const u=v=>isAir?`${fmt(v,0)} Pa`:`${fmt(toMCE(v,r.P),2)} mCE`;
+  const us=v=>isAir?"":`${fmt(v/1000,1)} kPa`;
+  const st=r.ok===null?"":(r.ok?"ok":"bad");
+  const reste=r.dispo-r.retenu;
+  rc.innerHTML=`<div class="kpis">
+    <div class="kpi"><div class="k">Pertes de charge du réseau</div><div class="v">${u(r.tot)}</div><div class="s">${us(r.tot)}</div></div>
+    <div class="kpi"><div class="k">À retenir (marge ${fmt(num(net.marge)||0,0)} %${!isAir&&r.dz?", dénivelé inclus":""})</div><div class="v">${u(r.retenu)}</div><div class="s">${us(r.retenu)}</div></div>
+    <div class="kpi ${st}"><div class="k">${isAir?"Pression disponible":"HMT disponible"}</div><div class="v">${isFinite(r.dispo)?u(r.dispo):"—"}</div><div class="s">${r.ok===null?"à renseigner":(r.ok?`<span class="pill ok">Suffisante</span> reste ${u(reste)}`:`<span class="pill bad">Insuffisante</span> manque ${u(-reste)}`)}</div></div>
+    <div class="kpi ${r.nv?"warn":"ok"}"><div class="k">Vitesses &gt; ${fmt(num(net.vmax),1)} m/s</div><div class="v">${r.nv}</div><div class="s">${r.nv?"lignes signalées en orange":"aucune alerte"}</div></div>
+  </div>
+  ${r.incomplete?`<p class="note" style="margin-top:10px"><b>Données manquantes :</b> une ou plusieurs lignes n'ont pas de débit ou de dimension, leur perte de charge n'est pas comptée.</p>`:""}
+  <div class="secbars" aria-hidden="true">${r.secs.map((x,i)=>`<div style="width:${r.tot>0?x.tot/r.tot*100:0}%;background:${COLORS[i%COLORS.length]}"></div>`).join("")}</div>
+  <div class="legend">${r.secs.map((x,i)=>`<span><i style="background:${COLORS[i%COLORS.length]}"></i>${esc(x.s.nom)} : ${isAir?fmt(x.tot,0)+" Pa":fmt(x.tot/1000,1)+" kPa"} (${r.tot>0?fmt(x.tot/r.tot*100,0):0} %)</span>`).join("")}</div>`;
+}
+
+/* ============ Bibliothèque ============ */
+const KIND={lin:"Tronçon (rugosité ε en mm)",sing:"Singularité (ζ)",exp:"Élargissement brusque (calculé)",con:"Rétrécissement brusque (calculé)",fixe:"ΔP fabricant",kv:"Organe à Kv",mark:"Repère sans perte"};
+function viewLib(){
+  const part=(dom,title,unit)=>`
+<div class="card">
+  <h2>${title}</h2>
+  <p class="hint">Modifie les valeurs pour les caler sur vos références internes ou les données fabricant. Elles sont enregistrées avec le projet. Les lignes déjà saisies qui n'ont pas de valeur propre suivent la bibliothèque.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="l">Catégorie</th><th class="l">Désignation</th><th class="l">Type</th><th>Valeur</th><th class="l">Unité</th><th></th></tr></thead>
+    <tbody>${libOf(dom).map(e=>{const key=e.k==="lin"?"e":e.k==="sing"?"z":e.k==="fixe"?"dp":e.k==="kv"?"kv":null;
+      const u=e.k==="lin"?"mm (ε)":e.k==="sing"?"ζ":e.k==="fixe"?unit+" par défaut":e.k==="kv"?"m³/h (Kv)":"";
+      return `<tr><td class="l"><input data-lib="${dom}" data-id="${e.id}" data-k="cat" value="${esc(e.cat)}" style="width:190px" aria-label="Catégorie"></td><td class="l"><input data-lib="${dom}" data-id="${e.id}" data-k="n" value="${esc(e.n)}" style="width:320px" aria-label="Désignation"></td><td class="l">${KIND[e.k]}</td><td>${key?`<input class="n" data-lib="${dom}" data-id="${e.id}" data-k="${key}" value="${vIn(e[key])}" style="width:80px" inputmode="decimal" aria-label="Valeur">`:""}</td><td class="l">${u}</td><td><button class="ic del" data-a="libdel" data-dom="${dom}" data-id="${e.id}" aria-label="Supprimer l'élément">✕</button></td></tr>`}).join("")}</tbody>
+  </table></div>
+  <div class="bar" style="margin-top:8px">
+    <select id="libk-${dom}" aria-label="Type du nouvel élément">${Object.entries(KIND).filter(([k])=>dom==="eau"||k!=="kv").map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
+    <button data-a="libadd" data-dom="${dom}">+ Ajouter un élément</button>
+    <button class="ghost" data-a="libreset" data-dom="${dom}">Revenir à la bibliothèque d'origine</button>
+  </div>
+</div>`;
+  return part("air","Aéraulique","Pa")+part("eau","Hydraulique","kPa")+`<p class="note"><b>Valeurs indicatives :</b> les coefficients ζ, rugosités et ΔP proposés sont des ordres de grandeur courants, pas des valeurs certifiées. Les ΔP des équipements (filtres, batteries, pièges à son, échangeurs…) doivent venir des fiches de sélection des fabricants.</p>`;
+}
+function viewHelp(){
+  return `<div class="card help">
+<h2>Mode d'emploi</h2>
+<h3>1. Créer le réseau</h3>
+<p>Dans l'onglet Aéraulique ou Hydraulique, choisis un réseau ou crée-en un (« + Nouveau réseau »). Renseigne le débit nominal, la température du fluide, la pression disponible du ventilateur (Pa) ou la HMT disponible de la pompe (mCE), et la marge de sécurité.</p>
+<h3>2. Découper en sections</h3>
+<p>Une section par partie du circuit : air neuf, soufflage, reprise, rejet ; ou aspiration, refoulement. Le récapitulatif donne le poids de chaque section.</p>
+<h3>3. Saisir les lignes du chemin le plus défavorable</h3>
+<ul>
+<li>Une ligne par tronçon de gaine ou de tube (avec sa longueur), par raccord, ou par équipement.</li>
+<li>Choisis le type dans le menu déroulant. Le débit et la section se reprennent de la ligne précédente : corrige-les à chaque changement de débit ou de dimension.</li>
+<li>Gaines rectangulaires : largeur × hauteur en mm. Circulaires : bascule la forme sur ○ et saisis le diamètre. Tubes : diamètre intérieur, avec une liste de diamètres usuels selon le matériau.</li>
+<li>Nb multiplie la ligne (par exemple 3 coudes identiques).</li>
+<li>Équipements : saisis la ΔP du fabricant (Pa en aéraulique, kPa en hydraulique). Organes de réglage : Kv en m³/h.</li>
+<li>Élargissement et rétrécissement brusques : saisis la section de sortie, le ζ est calculé (formule de Borda).</li>
+</ul>
+<h3>4. Lire le résultat</h3>
+<p>Total du réseau, total à retenir avec la marge (et le dénivelé en circuit ouvert), comparaison avec la pression ou la HMT disponible. Les vitesses au-dessus du seuil d'alerte s'affichent en orange.</p>
+<h3>5. Exporter</h3>
+<p>« Exporter Excel » crée un classeur avec une feuille récapitulative et une feuille par réseau. « PDF » sort une note de calcul du réseau affiché ou de tous les réseaux. « Enregistrer le projet » crée un fichier .json à ranger dans le dossier de l'affaire ; « Ouvrir un projet » le recharge.</p>
+<h3>Méthode de calcul</h3>
+<ul>
+<li>Pertes linéaires : Darcy-Weisbach, ΔP = λ · L / Dh · ρv²/2, λ par Colebrook-White (64/Re en laminaire). Gaine rectangulaire : diamètre hydraulique Dh = 2·L·H/(L+H).</li>
+<li>Pertes singulières : ΔP = ζ · ρv²/2.</li>
+<li>Air : masse volumique et viscosité calculées selon la température, à pression atmosphérique normale. Eau : propriétés interpolées entre 5 et 90 °C (eau pure ; eau glycolée non traitée).</li>
+<li>Organe à Kv : ΔP (bar) = (Q / Kv)², Q en m³/h.</li>
+</ul>
+<p class="note"><b>Validation :</b> résultats de pré-dimensionnement. La sélection du ventilateur ou de la pompe et les notes de calcul diffusées à l'extérieur doivent être relues et validées par une personne compétente.</p>
+</div>`;
+}
+
+/* ============ Routage & événements ============ */
+let cur="air";
+function render(){
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",a.dataset.t===cur));
+  document.querySelectorAll("[data-m]").forEach(i=>{i.value=S.meta[i.dataset.m]||""});
+  const m=document.getElementById("main");
+  m.innerHTML=cur==="air"||cur==="eau"?viewNet(cur):cur==="biblio"?viewLib():viewHelp();
+  if(cur==="air"||cur==="eau")updateNet(cur);
+  save();
+}
+function route(){const h=location.hash.slice(1);cur=["air","eau","biblio","aide"].includes(h)?h:"air";render()}
+window.addEventListener("hashchange",route);
+document.getElementById("datalists").innerHTML=Object.entries(SIZES).map(([k,a])=>`<datalist id="dl-${k}">${a.map(([n,d])=>`<option value="${String(d).replace(".",",")}">${n}</option>`).join("")}</datalist>`).join("");
+
+function findLine(dom,id){const net=curNet(dom);for(const s of net.sections){const i=s.lines.findIndex(l=>l.id===id);if(i>=0)return {s,i,l:s.lines[i]}}return null}
+const NUMF=["q","d","w","h","d2","w2","h2","L","nb","z","dp","kv"];
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.m){S.meta[t.dataset.m]=t.value;save();return}
+  if(t.dataset.lib){const e2=libOf(t.dataset.lib).find(x=>x.id===t.dataset.id);if(e2){e2[t.dataset.k]=["cat","n"].includes(t.dataset.k)?t.value:num(t.value)}save();return}
+  if(cur!=="air"&&cur!=="eau")return;
+  if(t.dataset.l&&t.tagName==="INPUT"){const f=findLine(cur,t.dataset.l);if(!f)return;const k=t.dataset.f;
+    f.l[k]=NUMF.includes(k)?(t.value.trim()===""?null:num(t.value)):t.value;
+    if(k==="z"||k==="dp")t.classList.toggle("ov",t.value.trim()!=="");
+    updateNet(cur);save();return}
+  if(t.dataset.n&&t.tagName==="INPUT"){const net=curNet(cur);net[t.dataset.n]=["nom","equip"].includes(t.dataset.n)?t.value:num(t.value);
+    if(t.dataset.n==="nom"){const o=document.querySelector(`#netsel option[value="${S[cur].cur}"]`);if(o)o.textContent=t.value}
+    updateNet(cur);save();return}
+  if(t.dataset.s&&t.tagName==="INPUT"){const s=curNet(cur).sections.find(x=>x.id===t.dataset.s);if(s)s.nom=t.value;updateNet(cur);save()}
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="file-in"&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const o=JSON.parse(fr.result);if(!o.air||!o.eau||!o.lib)throw 0;S=o;render();flash("Projet ouvert.")}catch(err){flash("Fichier non reconnu : choisis un fichier enregistré par cet outil.",true)}};fr.readAsText(t.files[0]);t.value="";return}
+  if(t.dataset.a==="netsel"){S[cur].cur=Number(t.value);render();return}
+  if(t.dataset.l&&t.tagName==="SELECT"){const f=findLine(cur,t.dataset.l);if(!f)return;
+    if(t.dataset.f==="t"){f.l.t=t.value;f.l.z=null;f.l.dp=null}else f.l[t.dataset.f]=t.value;
+    if(t.dataset.f==="f"&&t.value==="C"&&!isFinite(num(f.l.d))&&isFinite(num(f.l.w))){f.l.d=Math.round(1.3*Math.pow(f.l.w*f.l.h,0.625)/Math.pow(f.l.w+f.l.h,0.25))}
+    render();return}
+  if(t.dataset.n&&t.tagName==="SELECT"){curNet(cur)[t.dataset.n]=t.value;render()}
+});
+function newNet(dom){return dom==="air"?{id:uid(),nom:"Nouveau réseau",equip:"",q:1000,T:20,dispo:null,marge:10,vmax:6,sections:[{id:uid(),nom:"Soufflage",lines:[L("m_scta",{q:1000,w:400,h:300})]}]}
+  :{id:uid(),nom:"Nouveau réseau",equip:"",q:10,T:20,dispo:null,marge:10,vmax:2,mat:"acier",dz:0,sections:[{id:uid(),nom:"Circuit",lines:[L("m_pr",{q:10,d:53.1})]}]}}
+function cloneLines(lines){return lines.map(l=>Object.assign({},l,{id:uid()}))}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="xlsx")return exportXlsx();
+  if(a==="pdf")return exportPdf(false);
+  if(a==="pdfall")return exportPdf(true);
+  if(a==="save")return saveFile(`${fname()}_pertes-de-charge.json`,JSON.stringify(S,null,1),"Projet enregistré.");
+  if(a==="openf")return document.getElementById("file-in").click();
+  if(a==="libdel"){const L2=libOf(b.dataset.dom);const i=L2.findIndex(x=>x.id===b.dataset.id);if(i>=0)L2.splice(i,1);render();return}
+  if(a==="libadd"){const dom=b.dataset.dom,k=document.getElementById("libk-"+dom).value;libOf(dom).push({id:"u_"+uid(),cat:"Mes éléments",n:"Nouvel élément",k,z:k==="sing"?0.5:undefined,e:k==="lin"?0.1:undefined,dp:k==="fixe"?0:undefined,kv:k==="kv"?10:undefined});render();return}
+  if(a==="libreset"){const dom=b.dataset.dom;S.lib[dom]=JSON.parse(JSON.stringify(dom==="air"?LIB_AIR:LIB_EAU));render();flash("Bibliothèque d'origine rétablie.");return}
+  if(cur!=="air"&&cur!=="eau")return;
+  const D=S[cur],net=curNet(cur);
+  if(a==="netadd"){D.nets.push(newNet(cur));D.cur=D.nets.length-1;render();return}
+  if(a==="netdup"){const c=JSON.parse(JSON.stringify(net));c.id=uid();c.nom=net.nom+" (copie)";c.sections.forEach(s=>{s.id=uid();s.lines=cloneLines(s.lines)});D.nets.splice(D.cur+1,0,c);D.cur++;render();return}
+  if(a==="netdel"){if(D.nets.length<2)return;if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Confirmer la suppression";setTimeout(()=>{if(b.isConnected){b.dataset.ok="";b.textContent="Supprimer ce réseau"}},4000);return}D.nets.splice(D.cur,1);D.cur=Math.max(0,D.cur-1);render();return}
+  if(a==="secadd"){net.sections.push({id:uid(),nom:"Nouvelle section",lines:[]});render();return}
+  const si=net.sections.findIndex(s=>s.id===b.dataset.s);
+  if(a==="secdel"){if(b.dataset.ok!=="1"){b.dataset.ok="1";b.textContent="Confirmer";setTimeout(()=>{if(b.isConnected){b.dataset.ok="";b.textContent="Supprimer la section"}},4000);return}net.sections.splice(si,1);render();return}
+  if(a==="secup"&&si>0){[net.sections[si-1],net.sections[si]]=[net.sections[si],net.sections[si-1]];render();return}
+  if(a==="secdown"&&si>=0&&si<net.sections.length-1){[net.sections[si+1],net.sections[si]]=[net.sections[si],net.sections[si+1]];render();return}
+  if(a==="add"){const s=net.sections[si],t=document.getElementById("add-"+s.id).value;const last=s.lines[s.lines.length-1]||(()=>{const p=net.sections.slice(0,si).reverse().find(x=>x.lines.length);return p?p.lines[p.lines.length-1]:null})();
+    s.lines.push(L(t,last?{q:last.q,f:last.f,d:last.d,w:last.w,h:last.h}:{q:net.q}));render();
+    const r=document.querySelector(`[data-row="${s.lines[s.lines.length-1].id}"] select.ty`);if(r)r.focus();return}
+  const f=b.dataset.l?findLine(cur,b.dataset.l):null;if(!f)return;
+  if(a==="del"){f.s.lines.splice(f.i,1);render();return}
+  if(a==="dup"){f.s.lines.splice(f.i+1,0,Object.assign({},f.l,{id:uid()}));render();return}
+  if(a==="ins"){const l=f.l;f.s.lines.splice(f.i+1,0,L(cur==="air"?"g_galva":"tb_"+(net.mat==="acier"?"acier":net.mat||"pvc"),{q:l.q,f:l.f,d:l.d,w:l.w,h:l.h}));render();return}
+  if(a==="up"&&f.i>0){[f.s.lines[f.i-1],f.s.lines[f.i]]=[f.s.lines[f.i],f.s.lines[f.i-1]];render();return}
+  if(a==="down"&&f.i<f.s.lines.length-1){[f.s.lines[f.i+1],f.s.lines[f.i]]=[f.s.lines[f.i],f.s.lines[f.i+1]];render();return}
+});
+let flT;function flash(m,err){const e=document.getElementById("fl");e.textContent=m;e.className="flash"+(err?" err":"");clearTimeout(flT);flT=setTimeout(()=>{e.textContent=""},5000)}
+
+/* ============ Exports ============ */
+let DL=null;
+(async()=>{try{if(window.claude&&window.claude.use)DL=await window.claude.use("downloads")}catch(e){DL=null}
+  if(!DL)DL={save:({filename,data})=>new Promise((res,rej)=>{try{const type={xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",pdf:"application/pdf",json:"application/json"}[String(filename).split(".").pop().toLowerCase()]||"application/octet-stream";const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement("a");a.href=u;a.download=filename;a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),10000);res()}catch(e){rej({code:"erreur"})}})}; /* Adaptation app EAS : téléchargement navigateur standard hors claude.ai */
+  if(!DL){["b-xlsx","b-pdf","b-pdfall","b-save"].forEach(id=>{const b=document.getElementById(id);if(b){b.disabled=true;b.title="Téléchargement indisponible dans cette vue : ouvre l'outil depuis sa page claude.ai."}})}})();
+const fname=()=>(S.meta.affaire||S.meta.projet||"projet").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_").slice(0,60)||"projet";
+async function saveFile(name,data,msg){
+  if(!DL){flash("Téléchargement indisponible dans cette vue.",true);return}
+  try{await DL.save({filename:name,data});flash(msg)}catch(err){flash(err&&err.code==="declined"?"Téléchargement annulé.":"Le téléchargement n'a pas abouti ("+(err&&err.code||"erreur")+").",true)}
+}
+function lineRow(dom,net,l,o){
+  const e=o.e,k=e.k,isAir=dom==="air";
+  const sec=k==="mark"?"":(isAir?(l.f==="R"?`${l.w||"?"}×${l.h||"?"}`:`Ø${l.d||"?"}`):`Ø${l.d||"?"}`);
+  const sec2=(k==="exp"||k==="con")?(isAir?(l.f==="R"?`${l.w2||"?"}×${l.h2||"?"}`:`Ø${l.d2||"?"}`):`Ø${l.d2||"?"}`):"";
+  const r1=v=>isFinite(v)?Math.round(v*100)/100:"";
+  return [e.n,l.rep||"",k==="mark"?"":r1(num(l.q)),sec,sec2,k==="lin"?r1(num(l.L)):"",k==="mark"?"":r1(num(l.nb)),
+    (k==="sing"||k==="exp"||k==="con")?r1(o.zeta):"",
+    k==="fixe"?r1(isFinite(num(l.dp))?num(l.dp):num(e.dp)):(k==="kv"?"Kv "+r1(isFinite(num(l.kv))?num(l.kv):num(e.kv)):""),
+    k==="mark"?"":r1(o.v),k==="lin"?r1(o.R):"",(k==="mark"||k==="fixe"||k==="kv")?"":r1(o.Pd),k==="mark"?"":r1(o.dp)];
+}
+const HEAD=dom=>["Élément","Repère","Débit (m³/h)",dom==="air"?"Section (mm)":"Ø int. (mm)","Sortie","L (m)","Nb","ζ",dom==="air"?"ΔP fab. (Pa)":"ΔP fab. (kPa) / Kv","v (m/s)","R (Pa/m)","Pd (Pa)","ΔP (Pa)"];
+function netSummary(dom,net,r){
+  const isAir=dom==="air",P=r.P;
+  return isAir?[["Total réseau (Pa)",Math.round(r.tot*10)/10],[`Total à retenir, marge ${num(net.marge)||0} % (Pa)`,Math.round(r.retenu*10)/10],["Pression disponible (Pa)",isFinite(r.dispo)?r.dispo:""],["Statut",r.ok===null?"Pression disponible non renseignée":(r.ok?"Pression disponible suffisante":"Pression disponible insuffisante")]]
+  :[["Total réseau (kPa)",Math.round(r.tot/100)/10],["Total réseau (mCE)",Math.round(toMCE(r.tot,P)*100)/100],[`Dénivelé géométrique (m)`,num(net.dz)||0],[`HMT à retenir, marge ${num(net.marge)||0} % (mCE)`,Math.round(toMCE(r.retenu,P)*100)/100],["HMT disponible (mCE)",isFinite(num(net.dispo))?num(net.dispo):""],["Statut",r.ok===null?"HMT disponible non renseignée":(r.ok?"HMT disponible suffisante":"HMT disponible insuffisante")]];
+}
+function exportXlsx(){
+  if(!window.XLSX){flash("Le module Excel ne s'est pas chargé : vérifie la connexion puis recharge la page.",true);return}
+  const wb=XLSX.utils.book_new(),m=S.meta,used=new Set();
+  const sheetName=s=>{let n=s.replace(/[\[\]:*?\/\\]/g," ").slice(0,28).trim()||"Réseau";let k=n,i=2;while(used.has(k.toLowerCase()))k=n.slice(0,25)+" "+(i++);used.add(k.toLowerCase());return k};
+  const rec=[["Calcul des pertes de charge"],["Projet",m.projet],["Affaire",m.affaire],["Établi par",m.auteur],["Date",m.date],["Indice",m.indice],[],
+    ["Type","Réseau","Équipement","Débit (m³/h)","Total réseau","Total à retenir","Disponible","Unité","Statut"]];
+  const sheets=[];
+  ["air","eau"].forEach(dom=>S[dom].nets.forEach(net=>{
+    const r=calcNet(dom,net),isAir=dom==="air",P=r.P;
+    const cv=v=>isAir?Math.round(v*10)/10:Math.round(toMCE(v,P)*100)/100;
+    rec.push([isAir?"Aéraulique":"Hydraulique",net.nom,net.equip,num(net.q),cv(r.tot),cv(r.retenu),isFinite(r.dispo)?(isAir?r.dispo:num(net.dispo)):"",isAir?"Pa":"mCE",r.ok===null?"à renseigner":(r.ok?"Suffisant":"Insuffisant")]);
+    const aoa=[[`${isAir?"Aéraulique":"Hydraulique"} – ${net.nom}`],["Projet",m.projet,"","Affaire",m.affaire,"","Date",m.date,"","Indice",m.indice],
+      [isAir?"CTA / ventilateur":"Pompe",net.equip,"","Débit nominal (m³/h)",num(net.q),"","Température (°C)",num(net.T),"","Marge (%)",num(net.marge)],[]];
+    const head=HEAD(dom);
+    r.secs.forEach(x=>{aoa.push([x.s.nom.toUpperCase()]);aoa.push(head);x.rows.forEach((o,i)=>aoa.push(lineRow(dom,net,x.s.lines[i],o)));
+      const st=Array(head.length).fill("");st[0]="Sous-total "+x.s.nom;st[head.length-1]=Math.round(x.tot*10)/10;aoa.push(st);aoa.push([])});
+    netSummary(dom,net,r).forEach(row=>aoa.push(row));
+    aoa.push([],["Pré-dimensionnement, à valider par une personne compétente. ζ et rugosités : valeurs de la bibliothèque du projet."]);
+    const ws=XLSX.utils.aoa_to_sheet(aoa);ws["!cols"]=[{wch:44},{wch:14},{wch:12},{wch:14},{wch:12},{wch:8},{wch:6},{wch:7},{wch:16},{wch:9},{wch:10},{wch:9},{wch:11}];
+    sheets.push([sheetName((isAir?"A ":"H ")+net.nom),ws]);
+  }));
+  const wr=XLSX.utils.aoa_to_sheet(rec);wr["!cols"]=[{wch:13},{wch:34},{wch:24},{wch:12},{wch:13},{wch:15},{wch:12},{wch:7},{wch:14}];
+  used.add("récap");XLSX.utils.book_append_sheet(wb,wr,"Récap");
+  sheets.forEach(([n,ws])=>XLSX.utils.book_append_sheet(wb,ws,n));
+  const libA=[["Bibliothèque","Catégorie","Désignation","Type","Valeur"],...["air","eau"].flatMap(dom=>libOf(dom).map(e=>[dom==="air"?"Aéraulique":"Hydraulique",e.cat,e.n,KIND[e.k],e.k==="lin"?e.e:e.k==="sing"?e.z:e.k==="fixe"?e.dp:e.k==="kv"?e.kv:""]))];
+  const wl=XLSX.utils.aoa_to_sheet(libA);wl["!cols"]=[{wch:12},{wch:26},{wch:44},{wch:30},{wch:9}];XLSX.utils.book_append_sheet(wb,wl,"Bibliothèque");
+  const buf=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+  saveFile(`${fname()}_pertes-de-charge.xlsx`,new Uint8Array(buf),"Classeur Excel prêt.");
+}
+// jsPDF (polices standard) : remplace les caractères hors Latin-1
+const pz=s=>String(s??"").replace(/ζ/g,"zeta").replace(/Δ/g,"d").replace(/≤/g,"<=").replace(/≥/g,">=").replace(/[○▭]/g,"").replace(/³/g,"3").replace(/²/g,"2").replace(/[  ]/g," ");
+function exportPdf(all){
+  if(!window.jspdf||!window.jspdf.jsPDF){flash("Le module PDF ne s'est pas chargé : vérifie la connexion puis recharge la page.",true);return}
+  const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+  if(typeof doc.autoTable!=="function"){flash("Le module de tableaux PDF ne s'est pas chargé : recharge la page.",true);return}
+  const m=S.meta,list=[];
+  if(all)["air","eau"].forEach(dom=>S[dom].nets.forEach(n=>list.push([dom,n])));
+  else{const dom=cur==="eau"?"eau":"air";list.push([dom,curNet(dom)])}
+  const W=297,blue=[29,95,168];
+  list.forEach(([dom,net],ix)=>{
+    if(ix>0)doc.addPage();
+    const r=calcNet(dom,net),isAir=dom==="air",P=r.P;
+    doc.setFillColor(...blue);doc.rect(0,0,W,16,"F");doc.setTextColor(255);doc.setFont("helvetica","bold");doc.setFontSize(13);
+    doc.text(pz(`Calcul des pertes de charge – ${isAir?"aéraulique":"hydraulique"}`),12,10.5);
+    doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text(pz(`Eau Air Système · ${m.projet||""}${m.affaire?" · Affaire "+m.affaire:""}`),W-12,10.5,{align:"right"});
+    doc.setTextColor(20);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text(pz(net.nom),12,25);
+    doc.setFont("helvetica","normal");doc.setFontSize(9);
+    doc.text(pz(`${isAir?"CTA / ventilateur":"Pompe"} : ${net.equip||"–"}   ·   Débit nominal : ${fmt(num(net.q),0)} m³/h   ·   Température : ${fmt(num(net.T),0)} °C   ·   Marge : ${fmt(num(net.marge)||0,0)} %   ·   Établi par : ${m.auteur||"–"}   ·   Date : ${m.date||"–"}   ·   Indice : ${m.indice||"–"}`),12,31);
+    const u=v=>isAir?`${fmt(v,0)} Pa`:`${fmt(toMCE(v,P),2)} mCE (${fmt(v/1000,1)} kPa)`;
+    const stat=r.ok===null?"Disponible non renseigné":(r.ok?"SUFFISANT":"INSUFFISANT");
+    const boxes=[["Total réseau",u(r.tot)],["Total à retenir",u(r.retenu)],[isAir?"Pression disponible":"HMT disponible",isFinite(r.dispo)?u(r.dispo):"–"],["Statut",stat]];
+    boxes.forEach(([k,v],i)=>{const x=12+i*68.5;doc.setDrawColor(200);doc.setFillColor(i===3?(r.ok===null?245:(r.ok?227:251)):245,i===3?(r.ok===null?245:(r.ok?244:229)):247,i===3?(r.ok===null?245:(r.ok?234:227)):250);doc.roundedRect(x,35,65,14,1.5,1.5,"FD");
+      doc.setFontSize(8);doc.setTextColor(90);doc.text(pz(k),x+3,40);doc.setFontSize(11);doc.setTextColor(20);doc.setFont("helvetica","bold");doc.text(pz(v),x+3,46.5);doc.setFont("helvetica","normal")});
+    const body=[];
+    r.secs.forEach(x=>{
+      body.push([{content:pz(`${x.s.nom}  —  ${isAir?fmt(x.tot,1)+" Pa":fmt(x.tot/1000,2)+" kPa"}`),colSpan:13,styles:{fillColor:[230,238,248],fontStyle:"bold",textColor:20}}]);
+      x.rows.forEach((o,i)=>{const row=lineRow(dom,net,x.s.lines[i],o).map(v=>typeof v==="number"?pz(v.toLocaleString("fr-FR",{maximumFractionDigits:2})):pz(v));body.push(row)});
+    });
+    body.push([{content:"Total réseau",colSpan:12,styles:{fontStyle:"bold",halign:"right"}},{content:pz(isAir?fmt(r.tot,1):fmt(r.tot,0)),styles:{fontStyle:"bold"}}]);
+    doc.autoTable({startY:53,head:[HEAD(dom).map(pz)],body,theme:"grid",margin:{left:12,right:12,bottom:16},
+      styles:{fontSize:7.5,cellPadding:1.3,lineColor:[210,218,224],lineWidth:0.1,overflow:"linebreak"},
+      headStyles:{fillColor:blue,textColor:255,fontStyle:"bold",fontSize:7.5},
+      columnStyles:{0:{cellWidth:62},1:{cellWidth:22},2:{halign:"right"},5:{halign:"right"},6:{halign:"right"},7:{halign:"right"},8:{halign:"right"},9:{halign:"right"},10:{halign:"right"},11:{halign:"right"},12:{halign:"right",fontStyle:"bold"}},
+      didParseCell:d=>{if(d.section==="body"&&d.column.index===9&&d.cell.raw!==""){const vv=parseFloat(String(d.cell.raw).replace(",","."));if(vv>num(net.vmax))d.cell.styles.textColor=[154,98,0]}}});
+    let y=doc.lastAutoTable.finalY+6;if(y>185){doc.addPage();y=20}
+    doc.setFontSize(8);doc.setTextColor(90);
+    const notes=[isAir?`Air à ${fmt(num(net.T),0)} °C : masse volumique ${fmt(P.rho,3)} kg/m³.`:`Eau à ${fmt(num(net.T),0)} °C : masse volumique ${fmt(P.rho,1)} kg/m³.${num(net.dz)?` Dénivelé géométrique : ${fmt(num(net.dz),1)} m.`:""}`,
+      `Méthode : pertes linéaires Darcy-Weisbach (lambda Colebrook-White), pertes singulières zeta · rho·v²/2, équipements selon données fabricant. Vitesses > ${fmt(num(net.vmax),1)} m/s en orange.`,
+      "Coefficients et rugosités : bibliothèque du projet (valeurs indicatives à confirmer). Pré-dimensionnement à valider par une personne compétente."];
+    notes.forEach((t,i)=>doc.text(pz(t),12,y+i*4.2));
+  });
+  const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(7.5);doc.setTextColor(120);doc.text(pz(`${m.projet||""} – indice ${m.indice||"–"}`),12,203);doc.text(`Page ${i} / ${n}`,W-12,203,{align:"right"})}
+  const buf=doc.output("arraybuffer");
+  saveFile(`${fname()}_pertes-de-charge${all?"":"_"+pz(list[0][1].nom).replace(/[^\w\-]+/g,"_")}.pdf`,new Uint8Array(buf),"PDF prêt.");
+}
+route();
+</script>
+</body>
+</html>

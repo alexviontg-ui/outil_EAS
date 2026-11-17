@@ -1,0 +1,13 @@
+# Configuration Netlify des Outils techniques EAS — rien à compléter.
+# Site statique : aucune étape de build, le dossier racine est publié tel quel.
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Les outils s'affichent dans des iframes de la même origine : ne pas mettre DENY.
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

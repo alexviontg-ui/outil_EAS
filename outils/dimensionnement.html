@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dimensionnement Ø gaines et tubes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout : petite application à onglets ; 3 panneaux (paramètres · données · résultats) côte à côte ou empilés */
+:root{
+  --bg:#eef2f5; --panel:#ffffff; --ink:#132029; --muted:#5b6b74; --line:#d3dce2;
+  --accent:#1d5fa8; --accent-soft:#e6eef8; --eau:#0f7b84; --air:#1d5fa8; --evac:#7a5a1d;
+  --hl:#d9f5ec; --hl-ink:#0d5a43; --res:#f4f7f9; --warn:#9a6200; --warn-bg:#fdf1db; --bad:#b3261e;
+  --input:#fbfdfe;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e161b; --panel:#16222a; --ink:#e2ebf0; --muted:#93a5ae; --line:#2a3a44;
+    --accent:#6aa8ee; --accent-soft:#1a2c3e; --eau:#4cc3cc; --air:#6aa8ee; --evac:#d6b26a;
+    --hl:#143a30; --hl-ink:#7fe0bf; --res:#1b2a33; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86;
+    --input:#111c23; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e161b; --panel:#16222a; --ink:#e2ebf0; --muted:#93a5ae; --line:#2a3a44;
+  --accent:#6aa8ee; --accent-soft:#1a2c3e; --eau:#4cc3cc; --air:#6aa8ee; --evac:#d6b26a;
+  --hl:#143a30; --hl-ink:#7fe0bf; --res:#1b2a33; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86;
+  --input:#111c23; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:13.5px/1.45 var(--f-body)}
+.app{max-width:1180px;margin:18px auto;padding:0 16px}
+h1{font:600 20px/1.2 var(--f-display);margin:0}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+nav{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+nav a{padding:8px 16px;text-decoration:none;color:var(--muted);font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;margin-bottom:-1px}
+nav a.on{background:var(--panel);border-color:var(--line)}
+nav a[data-t="eau"].on{color:var(--eau)} nav a[data-t="air"].on{color:var(--air)} nav a[data-t="evac"].on{color:var(--evac)} nav a[data-t="options"].on{color:var(--ink)}
+.win{background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;padding:14px}
+.cols{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:12px}
+.vertical .cols{grid-template-columns:1fr}
+@media (max-width:820px){.cols{grid-template-columns:1fr}}
+fieldset{border:1px solid var(--line);border-radius:7px;padding:10px 12px 12px;margin:0;min-width:0}
+legend{font:600 12.5px var(--f-body);color:var(--muted);padding:0 6px;font-style:italic}
+.f{display:grid;grid-template-columns:minmax(90px,auto) 1fr auto;gap:6px;align-items:center;margin-top:8px}
+.f>span:first-child{font-size:12.5px;color:var(--muted)}
+.u{font-size:12px;color:var(--muted);min-width:38px}
+input,select{font:13px var(--f-body);color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:5px;padding:5px 7px;width:100%}
+input.n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+input.key{background:var(--hl);color:var(--hl-ink);font-weight:600}
+input:disabled{opacity:.6}
+input[type=range]{padding:0;accent-color:var(--accent)}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px;margin-top:8px}
+.radios{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+.res{display:grid;grid-template-columns:auto 1fr auto;gap:8px 8px;align-items:center;margin-top:4px}
+.res .k{font-size:12.5px;color:var(--muted)}
+.res .v{font:600 18px/1.2 var(--f-mono);font-variant-numeric:tabular-nums;background:var(--res);border:1px solid var(--line);border-radius:5px;padding:4px 8px;text-align:right}
+.res .v.big{font-size:24px;color:var(--accent);background:var(--accent-soft)}
+.res .v.warn{color:var(--warn)}
+.slider{margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.slider .lab{font-size:12px;color:var(--muted)}
+.slider .val{font:600 15px var(--f-mono);background:var(--res);border:1px solid var(--line);border-radius:5px;padding:3px 8px;text-align:center;min-width:70px}
+button{font:500 13px var(--f-body);border:1px solid var(--accent);background:var(--panel);color:var(--accent);border-radius:5px;padding:5px 11px;cursor:pointer}
+button.ghost{border-color:var(--line);color:var(--muted)}
+button.x{border-color:transparent;color:var(--muted);padding:2px 6px}
+button.x:hover{color:var(--bad)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--accent-soft);color:var(--muted);font-weight:600;font-size:11.5px;position:sticky;top:0}
+td.l,th.l{text-align:left}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.lab{font-family:var(--f-body)}
+tr.sel td{background:var(--hl);color:var(--hl-ink);font-weight:600}
+tr.dim td{color:var(--muted)}
+td input{width:80px;padding:3px 5px}
+td input.t{width:150px;text-align:left;font-family:var(--f-body)}
+.flash{font-size:12.5px;color:var(--hl-ink);min-height:1em}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:6px 10px;background:var(--warn-bg);border-radius:4px;margin-top:12px}
+.note b{color:var(--ink)}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.pipe{display:flex;justify-content:center;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <h1>Dimensionnement Ø – gaines et tubes</h1>
+  <div class="sub">Eau Air Système · Choix du diamètre selon la vitesse ou la perte de charge maximale. Pré-dimensionnement, à valider par une personne compétente.</div>
+  <nav id="tabs"><a href="#eau" data-t="eau">Eau</a><a href="#air" data-t="air">Air</a><a href="#evac" data-t="evac">Évacuations</a><a href="#options" data-t="options">Options</a></nav>
+  <div class="win" id="win"></div>
+</div>
+<script>
+"use strict";
+/* ================= Données de base (indicatives, modifiables) ================= */
+// Séries de tubes : [libellé, Ø ext. ou DN affiché, Ø int. mm]
+function sdr(list,S,emin){return list.map(d=>{const e=Math.max(emin,Math.ceil(d/S*10)/10);return [String(d),d,+(d-2*e).toFixed(1)]})}
+const SERIES0={
+  pvc16:{n:"PVC-U Pression PN16",e:0.007,s:sdr([16,20,25,32,40,50,63,75,90,110,125,140,160,200,225,250,315],13.6,1.5)},
+  pvc10:{n:"PVC-U Pression PN10",e:0.007,s:sdr([32,40,50,63,75,90,110,125,140,160,200,225,250,315],21,1.5)},
+  pehd16:{n:"PEHD PN16 (SDR11)",e:0.007,s:sdr([20,25,32,40,50,63,75,90,110,125,160,200,250,315],11,2.0)},
+  pehd10:{n:"PEHD PN10 (SDR17)",e:0.007,s:sdr([40,50,63,75,90,110,125,160,200,250,315],17,2.0)},
+  acier:{n:"Acier noir",e:0.045,s:[["DN15",15,16.1],["DN20",20,21.7],["DN25",25,27.3],["DN32",32,36.0],["DN40",40,41.9],["DN50",50,53.1],["DN65",65,68.9],["DN80",80,80.9],["DN100",100,105.3],["DN125",125,129.7],["DN150",150,158.3],["DN200",200,207.3],["DN250",250,260.4],["DN300",300,309.7]]},
+  inox:{n:"Inox (paroi mince)",e:0.015,s:[["DN25",25,29.7],["DN32",32,38.4],["DN40",40,44.3],["DN50",50,56.3],["DN65",65,72.1],["DN80",80,84.9],["DN100",100,110.3],["DN150",150,163.1]]},
+  cuivre:{n:"Cuivre",e:0.0015,s:[["12×1",12,10],["14×1",14,12],["16×1",16,14],["18×1",18,16],["22×1",22,20],["28×1",28,26],["35×1,2",35,32.6],["42×1,2",42,39.6],["54×1,5",54,51]]},
+  multi:{n:"Multicouche",e:0.007,s:[["16×2",16,12],["20×2",20,16],["26×3",26,20],["32×3",32,26],["40×3,5",40,33],["50×4",50,42],["63×4,5",63,54]]},
+  per:{n:"PER",e:0.007,s:[["12×1,1",12,9.8],["16×1,5",16,13],["20×1,9",20,16.2],["25×2,3",25,20.4],["32×2,9",32,26.2]]}
+};
+const EVAC0={
+  pvc:{n:"PVC",g:0.16,s:[[32,26,32],[40,34,40],[50,44,50],[63,57,63],[75,69,75],[90,84,90],[100,94,100],[110,103.6,110],[125,118.6,125],[140,133.6,140],[160,153.6,160],[200,192.2,200],[250,240.2,250],[315,302.6,315]]},
+  fonte:{n:"Fonte (SME)",g:0.16,s:[[50,51,58],[75,74,83],[100,99,110],[125,124,135],[150,152,160],[200,200,210],[250,251,274],[300,301,326]]},
+  pehd:{n:"PEHD évacuation",g:0.16,s:[[40,34,40],[50,44,50],[56,50,56],[63,57,63],[75,69,75],[90,83,90],[110,101.4,110],[125,115.2,125],[160,147.6,160],[200,184.6,200],[250,230.8,250],[315,290.6,315]]}
+};
+const DUCT0=[63,80,100,125,160,200,250,315,355,400,450,500,560,630,710,800,900,1000,1120,1250];
+const GMAT0={galva:{n:"Galva.",e:0.15},alu:{n:"Alu / spiralée lisse",e:0.05},pvc:{n:"PVC / PP",e:0.01},souple:{n:"Gaine souple",e:1.5},perso:{n:"Personnalisé",e:0.15}};
+
+/* ================= Physique ================= */
+const num=v=>{if(typeof v==="number")return v;const x=parseFloat(String(v??"").replace(",",".").replace(/\s/g,""));return isFinite(x)?x:NaN};
+const fmt=(x,d=2)=>isFinite(x)?x.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
+const G=9.81;
+const WT=[0,5,10,20,30,40,50,60,70,80,90],WR=[999.8,1000.0,999.7,998.2,995.7,992.2,988.0,983.2,977.8,971.8,965.3],WN=[1.792,1.519,1.307,1.004,0.801,0.658,0.553,0.475,0.413,0.365,0.326],WC=[4.217,4.202,4.192,4.182,4.178,4.179,4.181,4.185,4.191,4.198,4.207];
+function interp(X,Y,x){x=Math.min(X[X.length-1],Math.max(X[0],x));let i=0;while(i<X.length-2&&x>X[i+1])i++;const f=(x-X[i])/(X[i+1]-X[i]);return Y[i]+f*(Y[i+1]-Y[i])}
+function fluid(T){
+  if(S.opt.glycol)return {rho:num(S.opt.gRho),nu:num(S.opt.gNu)*1e-6,cp:num(S.opt.gCp)*1000};
+  return {rho:interp(WT,WR,T),nu:interp(WT,WN,T)*1e-6,cp:interp(WT,WC,T)*1000};
+}
+function airProps(T,HR,z){
+  const p=101325*Math.pow(1-2.25577e-5*num(z),5.25588),Tk=num(T)+273.15;
+  const ps=611.2*Math.exp(17.62*num(T)/(243.12+num(T))),pv=Math.min(1,num(HR)/100)*ps;
+  const rho=(p-pv)/(287.05*Tk)+pv/(461.5*Tk),mu=1.458e-6*Math.pow(Tk,1.5)/(Tk+110.4);
+  return {rho,nu:mu/rho,p};
+}
+function lambda(Re,eps,D){if(!(Re>0))return NaN;if(Re<2300)return 64/Re;const r=eps/D/3.7;let l=0.25/Math.pow(Math.log10(r+5.74/Math.pow(Re,0.9)),2);for(let k=0;k<30;k++){const x=-2*Math.log10(r+2.51/(Re*Math.sqrt(l)));l=1/(x*x)}return l}
+// gradient de perte de charge (Pa/m) dans une conduite de diamètre hydraulique Dh (m) et section A (m²)
+function grad(Qm3s,A,Dh,eps,P){const v=Qm3s/A,Re=v*Dh/P.nu,l=lambda(Re,eps/1000,Dh);return {v,Re,R:l/Dh*0.5*P.rho*v*v}}
+const circ=D=>Math.PI*D*D/4;
+// Ø théorique (m) pour un gradient donné (bissection)
+function dForR(Qm3s,Rmax,eps,P){let lo=0.001,hi=3;for(let k=0;k<80;k++){const m=Math.sqrt(lo*hi);if(grad(Qm3s,circ(m),m,eps,P).R>Rmax)lo=m;else hi=m}return hi}
+
+/* ================= État ================= */
+const DEF={
+  tab:"eau",
+  eau:{mat:"pvc16",mode:"vit",Tdep:7,Tret:15,q:100,P:null,surp:false,surpPct:20,last:"q",vmax:1.2,rmax:15,runit:"mmCE"},
+  air:{forme:"C",mode:"vit",q:100,T:20,HR:40,z:10,vmax:4,rmax:1,mat:"galva",H:200,pas:50},
+  evac:{mat:"pvc",rem:"5",pente:1.5,qcible:null},
+  opt:{save:true,glycol:false,gRho:1040,gCp:3.75,gNu:3.5,vertical:false,chE:"%d-%n.%c",chA:"%d-%c",chOnE:true,chOnA:true,gmat:JSON.parse(JSON.stringify(GMAT0)),duct:DUCT0.slice(),series:JSON.parse(JSON.stringify(SERIES0)),evac:JSON.parse(JSON.stringify(EVAC0)),editing:false}
+};
+let S;
+try{const r=localStorage.getItem("eas-dim-v1");S=r?Object.assign(JSON.parse(JSON.stringify(DEF)),JSON.parse(r)):JSON.parse(JSON.stringify(DEF))}catch(e){S=JSON.parse(JSON.stringify(DEF))}
+function save(){try{if(S.opt.save)localStorage.setItem("eas-dim-v1",JSON.stringify(S));else localStorage.removeItem("eas-dim-v1")}catch(e){}}
+
+/* ================= Calculs ================= */
+function calcEau(){
+  const E=S.eau,ser=S.opt.series[E.mat]||Object.values(S.opt.series)[0];
+  const Tm=(num(E.Tdep)+num(E.Tret))/2,dT=Math.abs(num(E.Tret)-num(E.Tdep)),P=fluid(Tm);
+  // lien débit ↔ puissance
+  let qLh=num(E.q),W=num(E.P);
+  const k=1+(E.surp?num(E.surpPct)/100:0);
+  if(E.last==="P"&&isFinite(W)&&dT>0){qLh=W*k/(P.rho*P.cp*dT)*3.6e6}
+  else if(isFinite(qLh)&&dT>0){W=qLh/3.6e6*P.rho*P.cp*dT/k}
+  const Q=qLh/3.6e6;
+  const rmaxPa=E.runit==="mmCE"?num(E.rmax)*P.rho*G/1000:num(E.rmax);
+  const Dth=E.mode==="vit"?Math.sqrt(4*Q/(Math.PI*num(E.vmax))):dForR(Q,rmaxPa,ser.e,P);
+  const rows=ser.s.map(([lab,dn,di])=>{const D=num(di)/1000,g=grad(Q,circ(D),D,ser.e,P);return {lab,dn,di:num(di),v:g.v,R:g.R,Re:g.Re,ok:E.mode==="vit"?g.v<=num(E.vmax)+1e-9:g.R<=rmaxPa+1e-9}});
+  const idx=rows.findIndex(r=>r.ok);
+  return {ser,P,Tm,dT,qLh,W,k,Q,Dth,rows,idx,sel:rows[idx]};
+}
+function calcAir(){
+  const A=S.air,P=airProps(A.T,A.HR,A.z),eps=num((S.opt.gmat[A.mat]||GMAT0.galva).e);
+  const Q=num(A.q)/3600;
+  const Dth=A.mode==="vit"?Math.sqrt(4*Q/(Math.PI*num(A.vmax))):dForR(Q,num(A.rmax),eps,P);
+  let rows=[],sel=null,idx=-1,Wth=NaN;
+  if(A.forme==="C"){
+    rows=S.opt.duct.map(d=>{const D=num(d)/1000,g=grad(Q,circ(D),D,eps,P);return {lab:"Ø "+d,d:num(d),v:g.v,R:g.R,ok:A.mode==="vit"?g.v<=num(A.vmax)+1e-9:g.R<=num(A.rmax)+1e-9}});
+  }else{
+    const H=num(A.H)/1000,pas=Math.max(1,num(A.pas));
+    if(A.mode==="vit")Wth=Q/num(A.vmax)/H*1000;
+    else{let lo=0.01,hi=10;for(let k=0;k<80;k++){const m=Math.sqrt(lo*hi);const Dh=2*m*H/(m+H);if(grad(Q,m*H,Dh,eps,P).R>num(A.rmax))lo=m;else hi=m}Wth=hi*1000}
+    const w0=Math.max(pas,Math.ceil((Wth||pas)/pas)*pas-3*pas);
+    for(let w=w0;rows.length<9;w+=pas){const W=w/1000,Dh=2*W*H/(W+H),g=grad(Q,W*H,Dh,eps,P);rows.push({lab:`${w} × ${num(A.H)}`,w,v:g.v,R:g.R,Dh:Dh*1000,ok:A.mode==="vit"?g.v<=num(A.vmax)+1e-9:g.R<=num(A.rmax)+1e-9})}
+  }
+  idx=rows.findIndex(r=>r.ok);sel=rows[idx];
+  return {P,eps,Q,Dth,Wth,rows,idx,sel};
+}
+function evacFlow(Di,remp,pente,g){
+  const D=Di/1000,I=num(pente)/100,h=remp/10;
+  const th=2*Math.acos(1-2*h),A=D*D/8*(th-Math.sin(th)),Pm=D*th/2,Rh=A/Pm;
+  const v=87*Math.sqrt(Rh*I)/(1+g/Math.sqrt(Rh));
+  return {v,Q:v*A*1000};
+}
+function calcEvac(){
+  const E=S.evac,m=S.opt.evac[E.mat]||Object.values(S.opt.evac)[0],g=num(m.g);
+  const rows=m.s.map(([dn,di,de])=>{const r=evacFlow(num(di),num(E.rem),E.pente,g);return {dn,di:num(di),de,v:r.v,Q:r.Q}});
+  const qc=num(E.qcible);const idx=isFinite(qc)?rows.findIndex(r=>r.Q>=qc):-1;
+  return {m,g,rows,idx};
+}
+
+/* ================= Rendu ================= */
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const vIn=v=>v==null?"":String(v).replace(".",",");
+const nI=(p,cls="")=>`<input class="n ${cls}" id="i-${p.replace(/\./g,"-")}" data-p="${p}" value="${esc(vIn(get(p)))}" inputmode="decimal">`;
+const get=p=>p.split(".").reduce((o,k)=>o==null?o:o[k],S);
+function set(p,v){const k=p.split(".");let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
+const sel=(p,opts,re=true)=>`<select id="i-${p.replace(/\./g,"-")}" data-p="${p}"${re?' data-re="1"':""}>${opts.map(([v,t])=>`<option value="${esc(v)}"${String(get(p))===String(v)?" selected":""}>${esc(t)}</option>`).join("")}</select>`;
+const row=(lab,input,unit,id)=>`<label class="f" for="${id||""}"><span>${lab}</span>${input}<span class="u">${unit||""}</span></label>`;
+
+function viewEau(){
+  const E=S.eau,ser=Object.entries(S.opt.series);
+  const sl=E.mode==="vit"?{p:"eau.vmax",min:0.2,max:3,step:0.05,lab:"Vit. maxi (m/s)"}:{p:"eau.rmax",min:E.runit==="mmCE"?1:10,max:E.runit==="mmCE"?50:500,step:E.runit==="mmCE"?0.5:5,lab:`PdC maxi (${E.runit==="mmCE"?"mmCE/m":"Pa/m"})`};
+  return `<div class="cols">
+  <fieldset><legend>Paramètres</legend>
+    <div class="bar" style="margin-top:2px"><button data-a="edit" title="Modifier la série de diamètres">Éditer</button><div style="flex:1">${sel("eau.mat",ser.map(([k,v])=>[k,v.n]))}</div></div>
+    ${row("Mode de calcul",sel("eau.mode",[["vit","Vit. maxi"],["pdc","PdC maxi"]]),"","i-eau-mode")}
+    ${E.mode==="pdc"?row("Unité PdC",sel("eau.runit",[["mmCE","mmCE/m"],["Pa","Pa/m"]]),"","i-eau-runit"):""}
+    <label class="f" for="i-eau-Tdep"><span>Régime (°C)</span><span style="display:flex;gap:6px">${nI("eau.Tdep")}${nI("eau.Tret")}</span><span class="u">dép./ret.</span></label>
+    <div class="slider"><span class="lab">${sl.lab}</span><span></span><span class="val" id="sv-eau">${vIn(get(sl.p))}</span><input type="range" id="sl-eau" aria-label="${sl.lab}" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${get(sl.p)}" data-sl="${sl.p}"></div>
+  </fieldset>
+  <fieldset><legend>Données</legend>
+    ${row("Débit",nI("eau.q",E.last==="q"?"key":""),"L/h","i-eau-q")}
+    ${row("Puissance",nI("eau.P",E.last==="P"?"key":""),"W","i-eau-P")}
+    <label class="f" for="i-eau-surpPct"><span><label class="chk" for="cb-surp" style="margin:0"><input type="checkbox" id="cb-surp" data-cb="eau.surp"${E.surp?" checked":""}> + Surp.</label></span>${`<input class="n" id="i-eau-surpPct" data-p="eau.surpPct" value="${vIn(E.surpPct)}"${E.surp?"":" disabled"} inputmode="decimal">`}<span class="u">%</span></label>
+    <div class="hint" id="eau-info"></div>
+  </fieldset>
+  <fieldset><legend>Résultats</legend><div class="res" id="eau-res"></div>
+    <div class="bar"><button data-a="copyE">Copier</button><span class="flash" id="fl-eau"></span></div></fieldset>
+  </div>
+  <div class="tw"><table><thead><tr><th class="l">Diamètre</th><th>Ø int. (mm)</th><th>Vitesse (m/s)</th><th>PdC (mmCE/m)</th><th>PdC (Pa/m)</th><th>Régime</th></tr></thead><tbody id="eau-tab"></tbody></table></div>
+  ${S.opt.editing?editSeries():""}`;
+}
+function outEau(){
+  const r=calcEau(),E=S.eau,P=r.P,toMm=x=>x/(P.rho*G)*1000;
+  const other=E.last==="P"?"eau.q":"eau.P",el=document.getElementById("i-"+other.replace(".","-"));
+  if(el&&document.activeElement!==el)el.value=vIn(Math.round((E.last==="P"?r.qLh:r.W)*10)/10);
+  const s=r.sel;
+  document.getElementById("eau-res").innerHTML=`
+    <span class="k">Diam.</span><span class="v big">${s?esc(s.lab):"—"}</span><span class="u">${s&&/^DN/.test(s.lab)?"":"Ø"}</span>
+    <span class="k">Ø Théo.</span><span class="v">${fmt(r.Dth*1000,2)}</span><span class="u">mm</span>
+    <span class="k">Vit.</span><span class="v">${s?fmt(s.v,2):"—"}</span><span class="u">m/s</span>
+    <span class="k">PdC</span><span class="v">${s?fmt(toMm(s.R),2):"—"}</span><span class="u">mmCE/m</span>
+    <span class="k"></span><span class="v" style="font-size:14px">${s?fmt(s.R,1):"—"}</span><span class="u">Pa/m</span>`;
+  document.getElementById("eau-info").innerHTML=`Eau à ${fmt(r.Tm,1)} °C${S.opt.glycol?" (antigel : propriétés saisies)":""} : ρ ${fmt(P.rho,1)} kg/m³, cp ${fmt(P.cp/1000,2)} kJ/kg.K. ΔT ${fmt(r.dT,1)} K.${E.surp?` Puissance majorée de ${fmt(num(E.surpPct),0)} % pour le débit.`:""}${!s?`<br><b style="color:var(--bad)">Aucun diamètre de la série ne convient : élargis la série ou le critère.</b>`:""}`;
+  document.getElementById("eau-tab").innerHTML=r.rows.map((x,i)=>`<tr class="${i===r.idx?"sel":(i<r.idx||r.idx<0?"dim":"")}"><td class="l lab">${esc(x.lab)}</td><td>${fmt(x.di,1)}</td><td>${fmt(x.v,2)}</td><td>${fmt(toMm(x.R),2)}</td><td>${fmt(x.R,1)}</td><td class="lab">${x.Re<2300?"laminaire":(x.Re<4000?"transitoire":"turbulent")}</td></tr>`).join("");
+  return r;
+}
+function editSeries(){
+  const k=S.eau.mat,s=S.opt.series[k];
+  return `<fieldset style="margin-top:12px"><legend>Série « ${esc(s.n)} » – diamètres intérieurs (indicatifs, à vérifier selon le fabricant)</legend>
+  <div class="bar" style="margin-top:0">${row("Nom",`<input id="se-n" data-p="opt.series.${k}.n" data-s="1" value="${esc(s.n)}">`,"","se-n")}${row("Rugosité",nI(`opt.series.${k}.e`),"mm",`i-opt-series-${k}-e`)}</div>
+  <div class="tw"><table><thead><tr><th class="l">Libellé</th><th>Ø ext. / DN</th><th>Ø int. (mm)</th><th></th></tr></thead><tbody>
+  ${s.s.map((x,i)=>`<tr><td class="l"><input class="t" data-p="opt.series.${k}.s.${i}.0" data-s="1" value="${esc(x[0])}" aria-label="Libellé"></td><td><input class="n" data-p="opt.series.${k}.s.${i}.1" value="${vIn(x[1])}" aria-label="Diamètre extérieur ou DN"></td><td><input class="n" data-p="opt.series.${k}.s.${i}.2" value="${vIn(x[2])}" aria-label="Diamètre intérieur"></td><td><button class="x" data-a="sdel" data-i="${i}" aria-label="Supprimer">✕</button></td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="bar"><button data-a="sadd">+ Ajouter un diamètre</button><button class="ghost" data-a="snew">Créer une nouvelle série</button><button class="ghost" data-a="sreset">Série d'origine</button><button data-a="edit">Fermer l'édition</button></div></fieldset>`;
+}
+function viewAir(){
+  const A=S.air;
+  const sl=A.mode==="vit"?{p:"air.vmax",min:1,max:15,step:0.1,lab:"Vit. maxi (m/s)"}:{p:"air.rmax",min:0.2,max:5,step:0.05,lab:"PdC maxi (Pa/m)"};
+  return `<div class="cols" style="--n:4">
+  <fieldset><legend>Paramètres</legend>
+    <div class="radios"><label class="chk" for="r-c" style="margin:0"><input type="radio" name="forme" id="r-c" data-rd="air.forme" value="C"${A.forme==="C"?" checked":""}> Circulaire</label><label class="chk" for="r-r" style="margin:0"><input type="radio" name="forme" id="r-r" data-rd="air.forme" value="R"${A.forme==="R"?" checked":""}> Rectangle</label></div>
+    ${row("Mode",sel("air.mode",[["vit","Vit. maxi"],["pdc","PdC maxi"]]),"","i-air-mode")}
+    ${row("Matériau",sel("air.mat",Object.entries(S.opt.gmat).map(([k,v])=>[k,v.n])),"","i-air-mat")}
+    ${A.forme==="R"?row("Hauteur imposée",nI("air.H"),"mm","i-air-H")+row("Pas de largeur",nI("air.pas"),"mm","i-air-pas"):""}
+  </fieldset>
+  <fieldset><legend>Données</legend>
+    ${row("Débit",nI("air.q","key"),"m³/h","i-air-q")}
+    ${row("Temp.",nI("air.T"),"°C","i-air-T")}
+    ${row("Hygro.",nI("air.HR"),"%","i-air-HR")}
+    ${row("Altitude",nI("air.z"),"m","i-air-z")}
+  </fieldset>
+  <fieldset><legend>Réglages</legend>
+    <div class="res"><span class="k">${A.forme==="C"?"Diam. théorique":"Largeur théorique"}</span><span class="v" id="air-th"></span><span class="u">mm</span></div>
+    <div class="slider"><span class="lab">${sl.lab}</span><span></span><span class="val" id="sv-air">${vIn(get(sl.p))}</span><input type="range" id="sl-air" aria-label="${sl.lab}" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${get(sl.p)}" data-sl="${sl.p}"></div>
+    <div class="hint" id="air-info"></div>
+  </fieldset>
+  <fieldset><legend>Résultats</legend><div class="res" id="air-res"></div>
+    <div class="bar"><button data-a="copyA">Copier</button><span class="flash" id="fl-air"></span></div></fieldset>
+  </div>
+  <div class="tw"><table><thead><tr><th class="l">${A.forme==="C"?"Gaine":"Gaine L × H (mm)"}</th>${A.forme==="R"?"<th>Dh (mm)</th>":""}<th>Vitesse (m/s)</th><th>PdC (Pa/m)</th></tr></thead><tbody id="air-tab"></tbody></table></div>`;
+}
+function outAir(){
+  const r=calcAir(),A=S.air,s=r.sel;
+  document.getElementById("air-th").textContent=fmt(A.forme==="C"?r.Dth*1000:r.Wth,0);
+  document.getElementById("air-res").innerHTML=`
+    <span class="k">${A.forme==="C"?"Diamètre gaine":"Gaine L × H"}</span><span class="v big">${s?(A.forme==="C"?s.d:esc(s.lab)):"—"}</span><span class="u">mm</span>
+    <span class="k">Vit.</span><span class="v">${s?fmt(s.v,2):"—"}</span><span class="u">m/s</span>
+    <span class="k">PdC</span><span class="v">${s?fmt(s.R,2):"—"}</span><span class="u">Pa/m</span>`;
+  document.getElementById("air-info").innerHTML=`Air : ρ ${fmt(r.P.rho,3)} kg/m³ (pression ${fmt(r.P.p/100,0)} hPa), rugosité ${fmt(r.eps,3)} mm.${!s?`<br><b style="color:var(--bad)">Aucun diamètre de la liste ne convient.</b>`:""}`;
+  document.getElementById("air-tab").innerHTML=r.rows.map((x,i)=>`<tr class="${i===r.idx?"sel":(i<r.idx||r.idx<0?"dim":"")}"><td class="l lab">${esc(x.lab)}</td>${A.forme==="R"?`<td>${fmt(x.Dh,0)}</td>`:""}<td>${fmt(x.v,2)}</td><td>${fmt(x.R,2)}</td></tr>`).join("");
+  return r;
+}
+function viewEvac(){
+  const E=S.evac;
+  return `<div class="cols" style="--n:2;grid-template-columns:minmax(0,320px) minmax(0,1fr)">
+  <fieldset><legend>Paramètres</legend>
+    <div class="pipe"><svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Taux de remplissage"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--ink)" stroke-width="7"/><clipPath id="cp"><circle cx="60" cy="60" r="46"/></clipPath><rect id="water" x="0" y="${110-92*num(E.rem)/10-4}" width="120" height="120" fill="var(--eau)" opacity=".75" clip-path="url(#cp)"/><line x1="60" y1="${110-92*num(E.rem)/10-4}" x2="60" y2="106" stroke="var(--panel)" stroke-width="2"/></svg></div>
+    <div class="radios"><label class="chk" for="r-5" style="margin:0"><input type="radio" name="rem" id="r-5" data-rd="evac.rem" value="5"${E.rem==="5"?" checked":""}> 5/10</label><label class="chk" for="r-7" style="margin:0"><input type="radio" name="rem" id="r-7" data-rd="evac.rem" value="7"${E.rem==="7"?" checked":""}> 7/10</label></div>
+    ${row("Pente",nI("evac.pente","key"),"cm/m","i-evac-pente")}
+    <input type="range" id="sl-evac" aria-label="Pente en cm/m" min="0.5" max="5" step="0.1" value="${E.pente}" data-sl="evac.pente" style="margin-top:8px">
+    ${row("Nature du tube",sel("evac.mat",Object.entries(S.opt.evac).map(([k,v])=>[k,v.n])),"","i-evac-mat")}
+    ${row("Coefficient de rugosité (Bazin)",nI(`opt.evac.${E.mat}.g`),"","i-opt-evac-"+E.mat+"-g")}
+    ${row("Débit à évacuer",nI("evac.qcible"),"l/s","i-evac-qcible")}
+  </fieldset>
+  <fieldset><legend>Résultats</legend>
+    <div class="tw" style="margin-top:0"><table><thead><tr><th class="l">DN</th><th>Débit (l/s)</th><th>Vitesse (m/s)</th><th>Ø Int.</th><th>Ø Ext.</th></tr></thead><tbody id="evac-tab"></tbody></table></div>
+    <div class="hint" id="evac-info"></div>
+  </fieldset></div>
+  <p class="note"><b>Méthode :</b> écoulement gravitaire à surface libre, formule de Bazin v = 87·√(Rh·I) / (1 + γ/√Rh), avec γ = 0,16 par défaut, valeur reprise de ton logiciel actuel. Vérifie le coefficient et la méthode dans le DTU 60.11 en vigueur, ainsi que les diamètres intérieurs selon le fabricant. Le débit à évacuer (débits de base × coefficient de simultanéité) se détermine selon le DTU.</p>`;
+}
+function outEvac(){
+  const r=calcEvac();
+  document.getElementById("evac-tab").innerHTML=r.rows.map((x,i)=>`<tr class="${i===r.idx?"sel":""}"><td class="l">${x.dn}</td><td>${fmt(x.Q,2)}</td><td>${fmt(x.v,2)}</td><td>${fmt(x.di,1)}</td><td>${fmt(num(x.de),1)}</td></tr>`).join("");
+  const qc=num(S.evac.qcible);
+  document.getElementById("evac-info").innerHTML=isFinite(qc)?(r.idx>=0?`DN retenu pour ${fmt(qc,2)} l/s : <b>DN ${r.rows[r.idx].dn}</b> (capacité ${fmt(r.rows[r.idx].Q,2)} l/s).`:`<b style="color:var(--bad)">Aucun DN de la liste ne suffit pour ${fmt(qc,2)} l/s.</b>`):"Saisis un débit à évacuer pour surligner le DN minimal.";
+  const w=document.getElementById("water");
+}
+function viewOpt(){
+  const O=S.opt;
+  return `<div class="cols">
+  <fieldset><legend>Préférences</legend>
+    <label class="chk" for="o-save"><input type="checkbox" id="o-save" data-cb="opt.save"${O.save?" checked":""}> Sauver les paramètres (dans ce navigateur)</label>
+    <label class="chk" for="o-gly"><input type="checkbox" id="o-gly" data-cb="opt.glycol" data-re="1"${O.glycol?" checked":""}> Activer option Antigel</label>
+    ${O.glycol?`<div class="hint">Saisis les propriétés du fluide antigel à la température de service (fiche du fabricant de glycol).</div>
+      ${row("Masse vol.",nI("opt.gRho"),"kg/m³","i-opt-gRho")}${row("Chaleur mass.",nI("opt.gCp"),"kJ/kg.K","i-opt-gCp")}${row("Viscosité cin.",nI("opt.gNu"),"mm²/s","i-opt-gNu")}`:""}
+    <div class="bar"><button class="ghost" data-a="resetall">Tout réinitialiser</button></div>
+  </fieldset>
+  <fieldset><legend>Matériaux gaines (rugosité)</legend>
+    ${Object.entries(O.gmat).map(([k,v])=>row(esc(v.n),nI(`opt.gmat.${k}.e`),"mm",`i-opt-gmat-${k}-e`)).join("")}
+    <h4 style="margin:12px 0 0;font-size:12.5px;color:var(--muted)">Diamètres de gaines circulaires (mm)</h4>
+    <input id="o-duct" data-duct="1" value="${O.duct.join(" ; ")}" aria-label="Liste des diamètres de gaines" style="margin-top:6px;font-family:var(--f-mono)">
+  </fieldset>
+  <fieldset><legend>Chaîne à copier</legend>
+    <label class="chk" for="o-ce"><input type="checkbox" id="o-ce" data-cb="opt.chOnE"${O.chOnE?" checked":""}> Eau</label><input id="o-che" data-p="opt.chE" data-s="1" value="${esc(O.chE)}" style="margin-top:4px">
+    <label class="chk" for="o-ca"><input type="checkbox" id="o-ca" data-cb="opt.chOnA"${O.chOnA?" checked":""}> Air</label><input id="o-cha" data-p="opt.chA" data-s="1" value="${esc(O.chA)}" style="margin-top:4px">
+    <div class="hint">Codes : %d diamètre retenu · %n matériau · %c débit · %v vitesse · %p perte de charge · %t Ø théorique. Le bouton Copier de l'onglet colle ce texte dans le presse-papiers (par exemple pour annoter un plan).</div>
+  </fieldset>
+  <fieldset><legend>Affichage</legend>
+    <div class="radios"><label class="chk" for="o-v" style="margin:0"><input type="radio" name="aff" id="o-v" data-rd="opt.vertical" value="1"${O.vertical?" checked":""}> Vertical</label><label class="chk" for="o-h" style="margin:0"><input type="radio" name="aff" id="o-h" data-rd="opt.vertical" value="0"${!O.vertical?" checked":""}> Horizontal</label></div>
+  </fieldset></div>
+  <p class="note"><b>Données indicatives :</b> les diamètres intérieurs des séries, les rugosités et la liste des gaines sont des valeurs courantes à vérifier selon les fabricants. Tout est modifiable (bouton Éditer de l'onglet Eau, champs ci-dessus).</p>`;
+}
+function chain(fmtS,obj){return fmtS.replace(/%d/g,obj.d).replace(/%n/g,obj.n).replace(/%c/g,obj.c).replace(/%v/g,obj.v).replace(/%p/g,obj.p).replace(/%t/g,obj.t)}
+
+/* ================= Routage / événements ================= */
+let cur="eau";
+const VIEWS={eau:[viewEau,outEau],air:[viewAir,outAir],evac:[viewEvac,outEvac],options:[viewOpt,()=>{}]};
+function render(){
+  document.getElementById("app").classList.toggle("vertical",!!S.opt.vertical);
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",a.dataset.t===cur));
+  document.getElementById("win").innerHTML=VIEWS[cur][0]();update();
+}
+function update(){try{VIEWS[cur][1]()}catch(e){console.error(e)}save()}
+function route(){const h=location.hash.slice(1);cur=VIEWS[h]?h:"eau";render()}
+window.addEventListener("hashchange",route);
+const win=document.getElementById("win");
+const STR=new Set(["opt.chE","opt.chA"]);
+win.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.sl){const v=num(t.value);set(t.dataset.sl,v);const sv=t.parentElement&&t.parentElement.querySelector(".val");if(sv)sv.textContent=vIn(v);
+    const mirror=document.getElementById("i-"+t.dataset.sl.replace(/\./g,"-"));if(mirror)mirror.value=vIn(v);update();return}
+  if(t.dataset.duct){S.opt.duct=t.value.split(/[;\s]+/).map(num).filter(isFinite).sort((a,b)=>a-b);save();return}
+  if(t.dataset.p&&t.tagName==="INPUT"){
+    const p=t.dataset.p;
+    if(t.dataset.s||STR.has(p))set(p,t.value);else set(p,t.value.trim()===""?null:num(t.value));
+    if(p==="eau.q"||p==="eau.P"){S.eau.last=p==="eau.q"?"q":"P";document.getElementById("i-eau-q").classList.toggle("key",S.eau.last==="q");document.getElementById("i-eau-P").classList.toggle("key",S.eau.last==="P")}
+    const sl=document.querySelector(`[data-sl="${p}"]`);if(sl){sl.value=num(t.value);const sv=sl.parentElement.querySelector(".val");if(sv)sv.textContent=vIn(num(t.value))}
+    update();
+  }
+});
+win.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.tagName==="SELECT"&&t.dataset.p){set(t.dataset.p,t.value);render();return}
+  if(t.dataset.cb){set(t.dataset.cb,t.checked);if(t.dataset.cb==="eau.surp"){const i=document.getElementById("i-eau-surpPct");if(i)i.disabled=!t.checked}if(t.dataset.re||t.dataset.cb==="opt.save")render();else update();return}
+  if(t.dataset.rd){set(t.dataset.rd,t.dataset.rd==="opt.vertical"?t.value==="1":t.value);render();return}
+  if(t.dataset.duct){render()}
+});
+win.addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-a]");if(!b)return;const a=b.dataset.a;
+  if(a==="edit"){S.opt.editing=!S.opt.editing;render();return}
+  const k=S.eau.mat,ser=S.opt.series[k];
+  if(a==="sdel"){ser.s.splice(Number(b.dataset.i),1);render();return}
+  if(a==="sadd"){const l=ser.s[ser.s.length-1]||["",0,0];ser.s.push(["Nouveau",l[1],l[2]]);render();return}
+  if(a==="snew"){const id="u"+Math.random().toString(36).slice(2,7);S.opt.series[id]={n:"Ma série",e:0.007,s:[["d32",32,26]]};S.eau.mat=id;render();return}
+  if(a==="sreset"){if(SERIES0[k]){S.opt.series[k]=JSON.parse(JSON.stringify(SERIES0[k]));render()}return}
+  if(a==="resetall"){S=JSON.parse(JSON.stringify(DEF));render();return}
+  if(a==="copyE"||a==="copyA"){
+    let txt;
+    if(a==="copyE"){const r=calcEau(),s=r.sel;if(!s)return;txt=chain(S.opt.chOnE?S.opt.chE:"%d",{d:s.lab,n:r.ser.n,c:fmt(r.qLh,0)+"L/h",v:fmt(s.v,2)+"m/s",p:fmt(s.R/(r.P.rho*G)*1000,1)+"mmCE/m",t:fmt(r.Dth*1000,1)})}
+    else{const r=calcAir(),s=r.sel;if(!s)return;txt=chain(S.opt.chOnA?S.opt.chA:"%d",{d:S.air.forme==="C"?"Ø"+s.d:s.lab.replace(/ /g,""),n:(S.opt.gmat[S.air.mat]||{}).n||"",c:fmt(num(S.air.q),0)+"m³/h",v:fmt(s.v,2)+"m/s",p:fmt(s.R,2)+"Pa/m",t:fmt(S.air.forme==="C"?r.Dth*1000:r.Wth,0)})}
+    const fl=document.getElementById(a==="copyE"?"fl-eau":"fl-air");
+    try{await navigator.clipboard.writeText(txt);fl.textContent="Copié : "+txt}catch(err){fl.textContent=txt+" (copie refusée : sélectionne et Ctrl+C)"}
+    setTimeout(()=>{fl.textContent=""},4000);
+  }
+});
+route();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outils techniques EAS</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<header class="appbar">
+  <a class="brand" href="#/" aria-label="Outils techniques EAS – accueil">
+    <!-- Emplacement du logo : remplacer le span par <img src="assets/logo.svg" alt="Eau Air Système"> -->
+    <span class="logo-slot" title="Emplacement du logo"></span>
+    <span class="brand-text">
+      <span class="brand-name">Outils techniques EAS</span>
+      <span class="brand-sub">Eau Air Système – Groupe Baudin Chateauneuf</span>
+    </span>
+  </a>
+  <nav class="appnav" aria-label="Outils">
+    <a href="#/" data-route="">Accueil</a>
+    <a href="#/acoustique" data-route="acoustique">Études acoustiques</a>
+    <a href="#/pertes-de-charge" data-route="pertes-de-charge">Pertes de charge</a>
+    <a href="#/dimensionnement" data-route="dimensionnement">Dimensionnement Ø</a>
+  </nav>
+  <div class="current" id="current" aria-live="polite"></div>
+</header>
+
+<main id="home" class="home">
+  <div class="home-inner">
+    <h1>Outils techniques EAS</h1>
+    <p class="lead">Outils de calcul pour les installations CVC, plomberie et traitement d'eau des ouvrages aquatiques. Chaque outil garde ses propres données, enregistrées dans ce navigateur.</p>
+
+    <div class="cards">
+      <article class="card">
+        <h2>Études acoustiques</h2>
+        <p>Pièges à son de CTA, temps de réverbération, équipements en local, émergence au voisinage et calculs en dB.</p>
+        <p class="tabs-list">Pièges à son CTA · Réverbération · Équipements en local · Voisinage / émergence · Calculs dB · Projet / export</p>
+        <a class="btn" href="#/acoustique">Ouvrir l'outil</a>
+      </article>
+      <article class="card">
+        <h2>Pertes de charge</h2>
+        <p>Pertes de charge des réseaux aérauliques et hydrauliques, avec export Excel et PDF et enregistrement du projet.</p>
+        <p class="tabs-list">Aéraulique · Hydraulique · Bibliothèque des éléments · Mode d'emploi</p>
+        <a class="btn" href="#/pertes-de-charge">Ouvrir l'outil</a>
+      </article>
+      <article class="card">
+        <h2>Dimensionnement Ø</h2>
+        <p>Choix du diamètre des tubes d'eau, des gaines d'air et des évacuations selon le débit et les limites de vitesse ou de pente.</p>
+        <p class="tabs-list">Eau · Air · Évacuations · Options</p>
+        <a class="btn" href="#/dimensionnement">Ouvrir l'outil</a>
+      </article>
+    </div>
+  </div>
+  <footer class="home-foot">Outils de pré-dimensionnement. Les résultats doivent être validés par une personne compétente avant toute diffusion.</footer>
+</main>
+
+<div id="frames" class="frames" hidden></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "outils-techniques-eas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Outils techniques EAS – coquille statique réunissant les outils Acoustique, Pertes de charge et Dimensionnement",
+  "scripts": {
+    "vendor": "node scripts/copy-vendor.js",
+    "start": "serve -l 8080 ."
+  },
+  "devDependencies": {
+    "jspdf": "2.5.1",
+    "jspdf-autotable": "3.8.2",
+    "serve": "14.2.4",
+    "xlsx": "0.18.5"
+  }
+}
