@@ -11,7 +11,8 @@
   var TOOLS = {
     "acoustique":       { name: "Études acoustiques", src: "outils/acoustique.html" },
     "pertes-de-charge": { name: "Pertes de charge",   src: "outils/pertes-de-charge.html" },
-    "dimensionnement":  { name: "Dimensionnement Ø",  src: "outils/dimensionnement.html" }
+    "dimensionnement":  { name: "Dimensionnement Ø",  src: "outils/dimensionnement.html" },
+    "grilles-exterieures": { name: "Grilles extérieures", src: "outils/grilles-exterieures.html" }
   };
   var APP = "Outils techniques EAS";
 

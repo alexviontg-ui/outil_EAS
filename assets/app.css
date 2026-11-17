@@ -48,7 +48,7 @@ body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);display:
 .home-inner{width:100%;max-width:1180px;margin:0 auto;padding:40px 24px 24px;flex:1 0 auto}
 .home h1{font:600 28px/1.2 var(--f-display);margin:0 0 8px}
 .lead{color:var(--muted);max-width:70ch;margin:0 0 28px}
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:10px}
 .card h2{font:600 19px/1.2 var(--f-display);margin:0}
 .card p{margin:0}

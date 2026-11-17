@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grilles extérieures – sélection par surface libre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout : même gabarit que l'outil Dimensionnement (onglets, panneaux côte à côte, tableaux de résultats) */
+:root{
+  --bg:#eef2f5; --panel:#ffffff; --ink:#132029; --muted:#5b6b74; --line:#d3dce2;
+  --accent:#1d5fa8; --accent-soft:#e6eef8;
+  --hl:#d9f5ec; --hl-ink:#0d5a43; --res:#f4f7f9; --warn:#9a6200; --warn-bg:#fdf1db; --bad:#b3261e; --bad-bg:#fbe5e3;
+  --input:#fbfdfe;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e161b; --panel:#16222a; --ink:#e2ebf0; --muted:#93a5ae; --line:#2a3a44;
+    --accent:#6aa8ee; --accent-soft:#1a2c3e;
+    --hl:#143a30; --hl-ink:#7fe0bf; --res:#1b2a33; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86; --bad-bg:#3d1c1a;
+    --input:#111c23; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e161b; --panel:#16222a; --ink:#e2ebf0; --muted:#93a5ae; --line:#2a3a44;
+  --accent:#6aa8ee; --accent-soft:#1a2c3e;
+  --hl:#143a30; --hl-ink:#7fe0bf; --res:#1b2a33; --warn:#f0b75a; --warn-bg:#3a2c12; --bad:#ff8f86; --bad-bg:#3d1c1a;
+  --input:#111c23; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:13.5px/1.45 var(--f-body)}
+.app{max-width:1180px;margin:18px auto;padding:0 16px}
+h1{font:600 20px/1.2 var(--f-display);margin:0}
+h2{font:600 15px/1.2 var(--f-display);margin:18px 0 0}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+nav{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+nav a{padding:8px 16px;text-decoration:none;color:var(--muted);font-weight:500;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;margin-bottom:-1px}
+nav a.on{background:var(--panel);border-color:var(--line);color:var(--accent)}
+.win{background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;padding:14px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+fieldset{border:1px solid var(--line);border-radius:7px;padding:10px 12px 12px;margin:0;min-width:0}
+legend{font:600 12.5px var(--f-body);color:var(--muted);padding:0 6px;font-style:italic}
+.f{display:grid;grid-template-columns:minmax(110px,auto) 1fr auto;gap:6px;align-items:center;margin-top:8px}
+.f>span:first-child{font-size:12.5px;color:var(--muted)}
+.u{font-size:12px;color:var(--muted);min-width:38px}
+input,select{font:13px var(--f-body);color:var(--ink);background:var(--input);border:1px solid var(--line);border-radius:5px;padding:5px 7px;width:100%}
+input.n{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+input.key{background:var(--hl);color:var(--hl-ink);font-weight:600}
+input:disabled{opacity:.55}
+input[type=radio]{width:auto;accent-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.radios{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+.radios label{display:flex;gap:5px;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+@media (max-width:860px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;padding:8px 12px;background:var(--res)}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .v{font:600 20px/1.25 var(--f-mono);font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi.ok{border-left-color:var(--hl-ink)} .kpi.warn{border-left-color:var(--warn)} .kpi.bad{border-left-color:var(--bad)}
+button{font:500 13px var(--f-body);border:1px solid var(--accent);background:var(--panel);color:var(--accent);border-radius:5px;padding:5px 11px;cursor:pointer}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--accent-soft);color:var(--muted);font-weight:600;font-size:11.5px}
+td.l,th.l{text-align:left}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.lab{font-family:var(--f-body)}
+tr.sel td{background:var(--hl);color:var(--hl-ink);font-weight:600}
+tr.dim td{color:var(--muted)}
+.tag{display:inline-block;font:600 11px var(--f-body);padding:1px 6px;border-radius:10px;background:var(--hl);color:var(--hl-ink)}
+.tag.w{background:var(--warn-bg);color:var(--warn)} .tag.b{background:var(--bad-bg);color:var(--bad)}
+.flash{font-size:12.5px;color:var(--hl-ink);min-height:1em}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:6px 10px;background:var(--warn-bg);border-radius:4px;margin-top:12px}
+.note b{color:var(--ink)}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.doc p,.doc li{max-width:90ch}
+.doc code{font-family:var(--f-mono);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Grilles extérieures – sélection par surface libre</h1>
+  <div class="sub">Eau Air Système · Grilles pare-pluie VIM GMAA / GMAC (catalogue VIM 2025, p. 1457 à 1460). Pré-dimensionnement, à valider par une personne compétente.</div>
+  <nav id="tabs"><a href="#selection" data-t="selection">Sélection</a><a href="#catalogue" data-t="catalogue">Données catalogue</a><a href="#methode" data-t="methode">Méthode</a></nav>
+  <div class="win" id="win"></div>
+</div>
+<script>
+"use strict";
+/* ================= Données catalogue VIM 2025 (p. 1457-1460) =================
+   Tailles « L x H » en mm, Ak = surface efficace en m².
+   CELLS : tableau de sélection reconstitué [débit m³/h, index de la taille, ΔP aspiration Pa, ΔP rejet Pa, Vk lu m/s].
+   Pour GMAA 33 le catalogue donne des valeurs communes à l'aspiration et au rejet. */
+const SIZES33=[[200,200,.015],[400,200,.031],[500,200,.039],[250,250,.024],[300,300,.035],[500,300,.060],[600,300,.072],[400,400,.064],[500,400,.081],[600,400,.097],[500,500,.102],[600,600,.148],[700,700,.203],[1000,400,.164],[1000,500,.206]];
+const CELLS33=[[200,0,38,38,3.7],[200,3,14,14,2.3],[400,1,35,35,3.6],[400,2,22,22,2.9],[400,3,55,55,4.6],[400,4,26,26,3.2],
+ [600,2,47,47,4.3],[600,4,58,58,4.8],[600,5,20,20,2.8],[600,6,15,15,2.3],[600,7,17,17,2.6],[600,8,11,11,2.1],
+ [800,5,35,35,3.7],[800,6,24,24,3.1],[800,7,31,31,3.5],[800,8,19,19,2.7],[800,9,14,14,2.3],[800,10,14,14,2.2],
+ [1000,5,55,55,4.6],[1000,6,38,38,3.9],[1000,7,48,48,4.3],[1000,8,31,31,3.4],[1000,9,22,22,2.9],[1000,10,19,19,2.7],
+ [1500,8,68,68,5.2],[1500,9,48,48,4.3],[1500,10,43,43,4.1],[1500,11,22,22,2.8],[1500,13,18,18,2.6],[1500,12,12,12,2.1],
+ [2000,11,38,38,3.8],[2000,13,30,30,3.4],[2000,14,19,19,2.7],[2500,11,57,57,4.7],[2500,12,30,30,3.4],[2500,13,46,46,4.2],[2500,14,29,29,3.4],
+ [3000,12,43,43,4.1],[3000,13,67,67,5.1],[3000,14,42,42,4.1],[3500,12,59,59,4.8],[3500,14,57,57,4.7],[4000,12,78,78,5.5]];
+const SIZES80=[[400,400,.08],[600,400,.12],[600,600,.21],[800,600,.28],[800,800,.39],[1000,1000,.62],[1200,1200,.91]];
+const CELLS80=[[1000,0,27,21,3.4],[1000,1,13,9,2.3],[1500,0,60,40,5],[1500,1,30,22,3.5],[2000,1,50,37,4.6],[2000,2,15,12,2.6],[2000,3,9,7,2],
+ [3000,2,35,28,3.9],[3000,3,20,15,2.9],[3000,4,9,7,2],[4000,3,30,23,3.7],[4000,4,16,12,2.6],[5000,3,55,40,4.9],[5000,4,27,21,3.4],[5000,5,10,8,2.1],
+ [6000,4,38,28,4.1],[6000,5,15,11,2.5],[7000,4,55,38,4.7],[7000,5,19,14,2.8],[7000,6,9,7,2],[8000,5,27,21,3.4],[8000,6,14,10,2.4],
+ [10000,5,40,30,4.2],[10000,6,20,15,2.9],[12000,5,60,43,5],[12000,6,30,23,3.6],[15000,6,48,35,4.5]];
+const GAMMES={
+  gmaa33:{n:"GMAA 33",d:"Alu anodisé · pas 33 mm · ailettes en Z à 60° · moustiquaire 1,6 × 1,4 mm",sizes:SIZES33,cells:CELLS33,model:"33",
+    Lmin:150,Hmin:150,pasL:1,pasH:10,max:"L x H = 2000 x 2000 mm",maxP:"2000 x 1700 ou 1700 x 2000 mm",Lmax:2000,Hmax:2000},
+  gmaa80:{n:"GMAA 80",d:"Alu anodisé · pas 80 mm · ailettes en Z à 45° · grillage 12,7 × 12,7 mm",sizes:SIZES80,cells:CELLS80,model:"80",
+    Lmin:200,Hmin:300,pasL:1,pasH:10,max:"3000 x 2200 ou 2200 x 3000 mm",maxP:"2900 x 1700 ou 1700 x 2900 mm",Lmax:3000,Hmax:3000},
+  gmac80:{n:"GMAC 80",d:"Acier galvanisé · pas 80 mm · ailettes en Z à 45° · grillage 12,7 × 12,7 mm",sizes:SIZES80,cells:CELLS80,model:"80",
+    Lmin:200,Hmin:300,pasL:1,pasH:10,max:"2300 x 2200 ou 2200 x 2300 mm",maxP:"2300 x 1700 ou 1700 x 2300 mm",Lmax:2300,Hmax:2300}
+};
+const RHO_CAT=1.2; // masse volumique de référence pour ζ (valeurs catalogue)
+
+/* ================= Calculs ================= */
+const num=v=>{if(typeof v==="number")return v;const x=parseFloat(String(v??"").replace(",",".").replace(/\s/g,""));return isFinite(x)?x:NaN};
+const fmt=(x,d=2)=>isFinite(x)?x.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
+const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+// ζ rapporté à Vk (vitesse dans Ak) : ΔP = ζ · ρ/2 · Vk², Vk calculée avec l'Ak imprimé
+function zetas(g){
+  const per=g.sizes.map(()=>({a:[],r:[]})),all={a:[],r:[]};
+  g.cells.forEach(([q,i,pa,pr])=>{const v=q/3600/g.sizes[i][2],k=RHO_CAT/2*v*v;per[i].a.push(pa/k);per[i].r.push(pr/k);all.a.push(pa/k);all.r.push(pr/k)});
+  return {per:per.map(p=>p.a.length?{a:mean(p.a),r:mean(p.r),n:p.a.length}:null),glob:{a:med(all.a),r:med(all.r),n:all.a.length}};
+}
+const Z={};Object.keys(GAMMES).forEach(k=>Z[k]=zetas(GAMMES[k]));
+// GMAA 33 : Ak ≈ k · (L-14)·(H-14) (passage intérieur de la fiche), k calé sur les 15 tailles
+const K33=mean(SIZES33.map(([L,H,a])=>a*1e6/((L-14)*(H-14))));
+// GMAA/GMAC 80 : Ak/(L·H) dépend de H (nombre d'ailettes) ; interpolation sur les tailles catalogue (moyenne par hauteur)
+const R80=(()=>{const m=new Map();SIZES80.forEach(([L,H,a])=>{if(!m.has(H))m.set(H,[]);m.get(H).push(a*1e6/(L*H))});return [...m.entries()].sort((a,b)=>a[0]-b[0]).map(([H,r])=>[H,mean(r)])})();
+const R80k=(()=>{const [h1,r1]=R80[0],[h2,r2]=R80[R80.length-1];const k=(r2*h2-r1*h1)/(h2-h1);return {k,h0:h1-r1*h1/k}})();
+function ratio80(H){
+  const X=R80.map(r=>r[0]),Y=R80.map(r=>r[1]);
+  if(H<X[0])return {r:Math.max(0,R80k.k*(H-R80k.h0)/H),ext:true};
+  if(H>X[X.length-1])return {r:Y[Y.length-1],ext:true};
+  let i=0;while(i<X.length-2&&H>X[i+1])i++;const f=(H-X[i])/(X[i+1]-X[i]);return {r:Y[i]+f*(Y[i+1]-Y[i]),ext:false};
+}
+function akEst(g,L,H){
+  if(g.model==="33")return {ak:K33*(L-14)*(H-14)/1e6,ext:L<200||H<200||L>1000||H>700};
+  const q=ratio80(H);return {ak:q.r*L*H/1e6,ext:q.ext||L<400||L>1200};
+}
+// Largeur mini pour une hauteur donnée
+function Lfor(g,H,ak){
+  let L=g.model==="33"?ak*1e6/(K33*(H-14))+14:ak*1e6/(ratio80(H).r*H);
+  return Math.max(g.Lmin,Math.ceil(L/g.pasL)*g.pasL);
+}
+const dp=(z,v)=>z*RHO_CAT/2*v*v;
+
+/* ================= État ================= */
+const DEF={gamme:"gmaa33",usage:"a",n:1,mode:"q",ak:0.15,q:1500,vmax:3,H:"",Lmax:""};
+let S;try{const r=localStorage.getItem("eas-grext-v1");S=Object.assign({},DEF,r?JSON.parse(r):{})}catch(e){S=Object.assign({},DEF)}
+function save(){try{localStorage.setItem("eas-grext-v1",JSON.stringify(S))}catch(e){}}
+
+function need(){
+  const n=Math.max(1,Math.round(num(S.n))||1);
+  const tot=S.mode==="ak"?num(S.ak):num(S.q)/3600/num(S.vmax);
+  return {n,tot,per:tot/n,q:S.mode==="q"?num(S.q):NaN};
+}
+
+/* ================= Rendu ================= */
+let cur="selection";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function opt(v,l,sel){return `<option value="${v}"${v===sel?" selected":""}>${esc(l)}</option>`}
+function rad(name,v,l){return `<label><input type="radio" name="${name}" value="${v}"${S[name]===v?" checked":""}> ${l}</label>`}
+function inp(k,unit,attrs=""){return `<input class="n" data-k="${k}" value="${esc(S[k])}" inputmode="decimal" ${attrs}><span class="u">${unit}</span>`}
+
+function viewSelection(){
+  const g=GAMMES[S.gamme],z=Z[S.gamme],N=need(),use=S.usage,qg=N.q/N.n;
+  const okNeed=isFinite(N.per)&&N.per>0;
+  // 1) tailles du tableau de sélection
+  const rows=g.sizes.map(([L,H,ak],i)=>{const zz=z.per[i]||z.glob;const zi=use==="a"?zz.a:zz.r;const v=isFinite(qg)?qg/3600/ak:NaN;return {L,H,ak,i,v,dp:dp(zi,v),ok:okNeed&&ak>=N.per,marge:okNeed?(ak/N.per-1)*100:NaN,zMeas:!!z.per[i]}}).sort((a,b)=>a.ak-b.ak);
+  const best=rows.find(r=>r.ok);
+  // 2) sur mesure, hauteur imposée
+  const Himp=num(S.H),LmaxU=num(S.Lmax);
+  let custom=null;
+  if(okNeed&&isFinite(Himp)&&Himp>0){
+    const H=Math.max(g.Hmin,Math.ceil(Himp/g.pasH)*g.pasH),L=Lfor(g,H,N.per),e=akEst(g,L,H),v=qg/3600/e.ak;
+    custom={H,L,ak:e.ak,ext:e.ext,v,dp:dp(use==="a"?z.glob.a:z.glob.r,v),hAdj:H!==Himp};
+  }
+  // 3) sur mesure, tableau des hauteurs
+  const Hs=[];for(let H=Math.ceil(g.Hmin/100)*100;H<=Math.min(g.Hmax,2000);H+=100)Hs.push(H);
+  const cust=okNeed?Hs.map(H=>{const L=Lfor(g,H,N.per),e=akEst(g,L,H),v=qg/3600/e.ak;return {H,L,ak:e.ak,ext:e.ext,v,dp:dp(use==="a"?z.glob.a:z.glob.r,v),over:L>g.Lmax,overU:isFinite(LmaxU)&&L>LmaxU}}).filter(r=>r.L>=r.H/4&&r.L<=Math.max(4*r.H,g.Lmin)):[];
+  let sq=null,dmin=1e9;cust.forEach(r=>{const d=Math.abs(Math.log(r.L/r.H));if(d<dmin&&!r.over){dmin=d;sq=r}});
+
+  const vWarn=v=>!isFinite(v)?"":v>=3?` <span class="tag w">Vk ≥ 3</span>`:"";
+  const kpiBest=best?`<div class="kpi ok"><div class="k">Plus petite taille catalogue qui convient</div><div class="v">${best.L} × ${best.H}</div><div class="s">Ak ${fmt(best.ak,3)} m² · marge ${fmt(best.marge,0)} %</div></div>`
+    :`<div class="kpi bad"><div class="k">Taille catalogue</div><div class="v">aucune</div><div class="s">besoin supérieur à la plus grande taille du tableau : voir sur mesure ou plusieurs grilles</div></div>`;
+  const kpiVk=best&&isFinite(qg)?`<div class="kpi ${best.v>=3?"warn":"ok"}"><div class="k">Vk et ΔP (taille proposée, ${use==="a"?"prise d'air":"rejet"})</div><div class="v">${fmt(best.v,2)} m/s</div><div class="s">ΔP ≈ ${fmt(best.dp,0)} Pa${best.zMeas?" (ζ de la taille)":" (ζ médian gamme)"}</div></div>`
+    :`<div class="kpi"><div class="k">Vk et ΔP</div><div class="v">—</div><div class="s">saisir un débit pour les obtenir</div></div>`;
+  const kpiCust=custom?`<div class="kpi ${custom.ext?"warn":""}"><div class="k">Sur mesure pour H = ${custom.H} mm${custom.hAdj?" (arrondi au pas)":""}</div><div class="v">${custom.L} × ${custom.H}</div><div class="s">Ak ≈ ${fmt(custom.ak,3)} m²${isFinite(custom.v)?` · Vk ${fmt(custom.v,2)} m/s · ΔP ≈ ${fmt(custom.dp,0)} Pa`:""}${custom.ext?" · extrapolation":""}${custom.L>g.Lmax?" · L > maxi : plusieurs éléments":""}</div></div>`
+    :sq?`<div class="kpi"><div class="k">Sur mesure, format proche du carré</div><div class="v">${sq.L} × ${sq.H}</div><div class="s">Ak ≈ ${fmt(sq.ak,3)} m²${isFinite(sq.v)?` · Vk ${fmt(sq.v,2)} m/s`:""} · saisir H pour imposer la hauteur</div></div>`
+    :`<div class="kpi"><div class="k">Sur mesure</div><div class="v">—</div><div class="s"></div></div>`;
+
+  return `
+<div class="cols">
+  <fieldset><legend>Grille</legend>
+    <div class="f"><span>Gamme</span><select data-k="gamme">${Object.entries(GAMMES).map(([k,v])=>opt(k,v.n,S.gamme)).join("")}</select><span></span></div>
+    <div class="hint">${esc(g.d)}</div>
+    <div class="radios">${rad("usage","a","Prise d'air neuf (aspiration)")}${rad("usage","r","Rejet")}</div>
+    <div class="f"><span>Nombre de grilles</span>${inp("n","")}</div>
+  </fieldset>
+  <fieldset><legend>Besoin</legend>
+    <div class="radios">${rad("mode","q","Débit + vitesse maxi")}${rad("mode","ak","Surface libre connue")}</div>
+    <div class="f"><span>Débit total</span>${inp("q","m³/h",S.mode!=="q"?"disabled":"")}</div>
+    <div class="f"><span>Vitesse maxi dans Ak</span>${inp("vmax","m/s",S.mode!=="q"?"disabled":"")}</div>
+    <div class="f"><span>Surface libre totale</span>${inp("ak","m²",S.mode!=="ak"?"disabled":"")}</div>
+    <div class="f"><span>Ak requise par grille</span><input class="n key" value="${okNeed?fmt(N.per,3):"—"}" disabled><span class="u">m²</span></div>
+  </fieldset>
+  <fieldset><legend>Sur mesure (facultatif)</legend>
+    <div class="f"><span>Hauteur souhaitée H</span>${inp("H","mm",'placeholder="—"')}</div>
+    <div class="f"><span>Largeur maxi (réservation)</span>${inp("Lmax","mm",'placeholder="—"')}</div>
+    <div class="hint">Fabrication : L mini ${g.Lmin} mm (pas ${g.pasL} mm), H mini ${g.Hmin} mm (pas ${g.pasH} mm). Maxi en un élément : ${g.max} (avec peinture : ${g.maxP}).</div>
+  </fieldset>
+</div>
+${S.mode==="ak"?`<div class="hint">Mode surface libre : Vk et ΔP ne sont pas calculés (pas de débit saisi).</div>`:""}
+<div class="kpis">
+  <div class="kpi"><div class="k">Surface libre requise</div><div class="v">${okNeed?fmt(N.tot,3):"—"} m²</div><div class="s">${N.n>1?`soit ${fmt(N.per,3)} m² par grille × ${N.n}`:"pour une grille"}</div></div>
+  ${kpiBest}${kpiVk}${kpiCust}
+</div>
+<div class="bar"><button data-a="copy">Copier le récapitulatif</button><span class="flash" id="fl"></span></div>
+
+<h2>Tailles du tableau de sélection ${esc(g.n)}${g.model==="80"?" (communes GMAA 80 / GMAC 80)":""}</h2>
+<div class="tw"><table>
+<tr><th class="l">L × H (mm)</th><th>Ak (m²)</th><th>Marge sur besoin</th><th>Vk (m/s)</th><th>ΔP ${use==="a"?"aspiration":"rejet"} (Pa)</th><th class="l">Statut</th></tr>
+${[...rows.filter(r=>r.ok),...rows.filter(r=>!r.ok).reverse()].map(r=>`<tr class="${r===best?"sel":r.ok?"":"dim"}"><td class="l">${r.L} × ${r.H}</td><td>${fmt(r.ak,3)}</td><td>${fmt(r.marge,0)} %</td><td>${r.ok?fmt(r.v,2):"—"}</td><td>${r.ok?fmt(r.dp,0):"—"}</td><td class="l lab">${r===best?'<span class="tag">proposée</span>':r.ok?'<span class="tag">convient</span>':'insuffisante'}${r.ok?vWarn(r.v):""}</td></tr>`).join("")}
+</table></div>
+
+<h2>Sur mesure : largeur nécessaire selon la hauteur</h2>
+<div class="tw"><table>
+<tr><th>H (mm)</th><th>L mini (mm)</th><th>Ak estimée (m²)</th><th>Vk (m/s)</th><th>ΔP ${use==="a"?"aspiration":"rejet"} (Pa)</th><th class="l">Remarque</th></tr>
+${cust.length?cust.map(r=>`<tr class="${r===sq?"sel":r.over||r.overU?"dim":""}"><td>${r.H}</td><td>${r.L}</td><td>${fmt(r.ak,3)}</td><td>${fmt(r.v,2)}</td><td>${fmt(r.dp,0)}</td><td class="l lab">${[r===sq?'<span class="tag">format proche du carré</span>':"",r.ext?'<span class="tag w">extrapolation</span>':"",r.over?'<span class="tag b">L &gt; maxi : plusieurs éléments</span>':"",r.overU?'<span class="tag b">dépasse la largeur maxi</span>':"",isFinite(r.v)&&r.v>=3?'<span class="tag w">Vk ≥ 3</span>':""].join(" ")}</td></tr>`).join(""):`<tr><td colspan="6" class="l lab">Saisir le besoin.</td></tr>`}
+</table></div>
+
+<div class="note"><b>À vérifier.</b> Les surfaces Ak des tailles du tableau sont celles du catalogue VIM. Pour le sur-mesure, Ak est <b>estimée</b> à partir de ces tailles (onglet Méthode) : à confirmer par VIM, surtout quand la ligne est marquée « extrapolation ». Le catalogue distingue Vk &lt; 3 m/s et Vk ≥ 3 m/s : la vitesse maxi retenue (risque d'entrée d'eau, bruit) se fixe selon le CCTP et le projet. ΔP ramenée à ρ = 1,2 kg/m³.</div>`;
+}
+
+function viewCatalogue(){
+  const blocks=["gmaa33","gmaa80"].map(k=>{const g=GAMMES[k],z=Z[k],is80=g.model==="80";
+    const flows=[...new Set(g.cells.map(c=>c[0]))];
+    const cell=(q,i)=>{const c=g.cells.find(c=>c[0]===q&&c[1]===i);return c?(is80?`${c[2]} / ${c[3]}`:`${c[2]}`)+`<br><span style="color:var(--muted)">${fmt(c[4],1)}</span>`:""};
+    return `<h2>${is80?"GMAA 80 / GMAC 80":"GMAA 33"}</h2>
+<div class="tw"><table>
+<tr><th class="l">Débit (m³/h)</th>${g.sizes.map(s=>`<th>${s[0]} × ${s[1]}</th>`).join("")}</tr>
+<tr><td class="l lab">Ak (m²)</td>${g.sizes.map(s=>`<td><b>${fmt(s[2],3)}</b></td>`).join("")}</tr>
+<tr><td class="l lab">ζ ${is80?"asp. / rejet":""} (moy.)</td>${z.per.map(p=>`<td>${p?(is80?`${fmt(p.a,2)} / ${fmt(p.r,2)}`:fmt(p.a,2)):"—"}</td>`).join("")}</tr>
+${flows.map(q=>`<tr><td class="l">${q.toLocaleString("fr-FR")}</td>${g.sizes.map((s,i)=>`<td style="line-height:1.15">${cell(q,i)}</td>`).join("")}</tr>`).join("")}
+</table></div>
+<div class="hint">Cellules : ΔP en Pa${is80?" (aspiration / rejet)":" (aspiration et rejet)"}, puis Vk lue dans le catalogue en m/s. ζ médian de la gamme : ${is80?`${fmt(z.glob.a,2)} en aspiration, ${fmt(z.glob.r,2)} en rejet`:fmt(z.glob.a,2)} (${z.glob.n} valeurs).</div>`});
+  return `<div class="doc">
+<p>Source : VIM, catalogue 2025, grilles extérieures GMAA – GMAC, p. 1457 à 1460 (tableaux de sélection, limites de fabrication). Tableau reconstitué à partir du PDF : chaque cellule a été rattachée à sa taille par la relation Vk = Q / Ak.</p>
+${blocks.join("")}
+<h2>Limites de fabrication en un seul élément</h2>
+<div class="tw"><table>
+<tr><th class="l">Gamme</th><th class="l">Mini</th><th class="l">Maxi standard</th><th class="l">Maxi avec peinture</th></tr>
+${Object.values(GAMMES).map(g=>`<tr><td class="l lab">${g.n}</td><td class="l lab">L ${g.Lmin} mm (pas ${g.pasL}) · H ${g.Hmin} mm (pas ${g.pasH})</td><td class="l lab">${g.max}</td><td class="l lab">${g.maxP}</td></tr>`).join("")}
+</table></div>
+<div class="hint">GMAA 80 et GMAC 80 : au-delà de L maxi, fabrication en plusieurs éléments (gauche, milieu, droit).</div>
+<div class="note"><b>Écart relevé dans le catalogue (GMAA/GMAC 80).</b> Les vitesses Vk imprimées correspondent à des surfaces un peu plus grandes que les Ak imprimées (par exemple environ 0,66 m² au lieu de 0,62 m² pour 1000 × 1000, environ 0,41 m² au lieu de 0,39 m² pour 800 × 800). L'outil retient les Ak imprimées, ce qui va dans le sens de la sécurité. À faire préciser par VIM si la marge est faible.</div>
+</div>`;
+}
+
+function viewMethode(){
+  const r80=R80.map(([H,r])=>`H ${H} : ${fmt(r,3)}`).join(" · ");
+  return `<div class="doc">
+<h2>Besoin</h2>
+<p>Surface libre requise : <code>Ak = Q / (3600 × Vk maxi)</code>, ou saisie directe. Avec plusieurs grilles, le besoin est réparti à parts égales.</p>
+<h2>Tailles du tableau de sélection</h2>
+<p>On retient les tailles dont l'Ak catalogue est au moins égale au besoin. La plus petite est proposée. Vk = débit par grille / Ak.</p>
+<h2>Perte de charge</h2>
+<p><code>ΔP = ζ × ρ/2 × Vk²</code> avec ρ = 1,2 kg/m³. ζ est déduit des valeurs du catalogue : moyenne des cellules de la taille quand elle en a, sinon valeur médiane de la gamme. GMAA 33 : mêmes valeurs en aspiration et en rejet (indiqué au catalogue). GMAA/GMAC 80 : ζ distinct en aspiration et en rejet.</p>
+<h2>Surface efficace des grilles sur mesure (estimation)</h2>
+<ul>
+<li><b>GMAA 33</b> : <code>Ak ≈ ${fmt(K33,4)} × (L − 14) × (H − 14)</code>, en mm² ; (L − 14) × (H − 14) est le passage intérieur coté sur la fiche. Coefficient calé sur les 15 tailles du catalogue (écart ±1 %). « Extrapolation » si L ou H sort de la plage du tableau (200 à 1000 × 200 à 700).</li>
+<li><b>GMAA / GMAC 80</b> : <code>Ak ≈ r(H) × L × H</code>. Le rapport r dépend de la hauteur (nombre d'ailettes) : ${r80}. Interpolation linéaire entre ces hauteurs. Sous 400 mm : loi <code>r = ${fmt(R80k.k,3)} × (H − ${fmt(R80k.h0,0)}) / H</code> ; au-dessus de 1200 mm : r de 1200 mm. Ces deux cas sont signalés « extrapolation ».</li>
+</ul>
+<p>La largeur mini est arrondie au mm supérieur et la hauteur au pas de 10 mm supérieur, dans les limites de fabrication de la fiche.</p>
+<div class="note"><b>Pré-dimensionnement.</b> Les valeurs sur mesure sont des estimations : faire confirmer la sélection (Ak, ΔP, faisabilité) par VIM. Résultats à valider par une personne compétente.</div>
+</div>`;
+}
+
+function recap(){
+  const g=GAMMES[S.gamme],N=need(),qg=N.q/N.n,z=Z[S.gamme];
+  const rows=g.sizes.map(([L,H,ak],i)=>({L,H,ak,i})).filter(r=>r.ak>=N.per).sort((a,b)=>a.ak-b.ak);
+  const b=rows[0];const out=[["Grilles extérieures",g.n],["Usage",S.usage==="a"?"Prise d'air neuf":"Rejet"],["Nombre de grilles",N.n]];
+  if(S.mode==="q")out.push(["Débit total (m³/h)",fmt(N.q,0)],["Vitesse maxi dans Ak (m/s)",fmt(num(S.vmax),2)]);
+  out.push(["Ak requise totale (m²)",fmt(N.tot,3)],["Ak requise par grille (m²)",fmt(N.per,3)]);
+  if(b){const zz=z.per[b.i]||z.glob,v=qg/3600/b.ak;out.push(["Taille catalogue proposée (L x H mm)",`${b.L} x ${b.H}`],["Ak catalogue (m²)",fmt(b.ak,3)]);if(isFinite(v))out.push(["Vk (m/s)",fmt(v,2)],["ΔP (Pa)",fmt(dp(S.usage==="a"?zz.a:zz.r,v),0)]);}
+  else out.push(["Taille catalogue","aucune ne convient"]);
+  const Himp=num(S.H);if(isFinite(Himp)&&Himp>0){const H=Math.max(g.Hmin,Math.ceil(Himp/g.pasH)*g.pasH),L=Lfor(g,H,N.per),e=akEst(g,L,H);out.push(["Sur mesure (L x H mm, Ak estimée)",`${L} x ${H}`],["Ak estimée (m²)",fmt(e.ak,3)+(e.ext?" (extrapolation)":"")]);}
+  out.push(["Source","VIM catalogue 2025 p. 1457-1460"],["","Pré-dimensionnement à valider par une personne compétente"]);
+  return out.map(r=>r.join("\t")).join("\r\n");
+}
+
+function render(){
+  document.querySelectorAll("#tabs a").forEach(a=>a.classList.toggle("on",a.dataset.t===cur));
+  const w=document.getElementById("win");
+  const a=document.activeElement,k=a&&a.dataset?a.dataset.k:null,pos=a&&a.selectionStart;
+  w.innerHTML=cur==="catalogue"?viewCatalogue():cur==="methode"?viewMethode():viewSelection();
+  if(k){const e=w.querySelector(`[data-k="${k}"]`);if(e){e.focus();try{if(pos!=null)e.setSelectionRange(pos,pos)}catch(x){}}}
+}
+function route(){const h=location.hash.slice(1);cur=["selection","catalogue","methode"].includes(h)?h:"selection";render()}
+window.addEventListener("hashchange",route);
+document.addEventListener("input",e=>{const t=e.target;if(t.dataset.k){S[t.dataset.k]=t.value;save();render()}});
+document.addEventListener("change",e=>{const t=e.target;if(t.type==="radio"){S[t.name]=t.value;save();render()}else if(t.tagName==="SELECT"&&t.dataset.k){S[t.dataset.k]=t.value;save();render()}});
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-a]");if(!b)return;
+  if(b.dataset.a==="copy"){const t=recap(),fl=document.getElementById("fl");try{await navigator.clipboard.writeText(t);fl.textContent="Copié."}catch(err){fl.textContent="Copie refusée : sélectionne le texte et fais Ctrl+C."}}});
+route();
+</script>
+</body>
+</html>

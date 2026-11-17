@@ -8,6 +8,9 @@ Web app statique qui réunit les trois outils de calcul d'Eau Air Système (Grou
 | `#/acoustique` | Études acoustiques | `outils/acoustique.html` |
 | `#/pertes-de-charge` | Pertes de charge | `outils/pertes-de-charge.html` |
 | `#/dimensionnement` | Dimensionnement Ø gaines et tubes | `outils/dimensionnement.html` |
+| `#/grilles-exterieures` | Grilles extérieures (VIM GMAA / GMAC) | `outils/grilles-exterieures.html` |
+
+L'outil **Grilles extérieures** a été ajouté après coup. Il se base sur le catalogue VIM 2025 (GMAA 33, GMAA 80, GMAC 80, p. 1457 à 1460). Il propose la taille selon la surface libre Ak requise ou le débit et la vitesse maximale. Il donne aussi Vk et ΔP, et une estimation pour les dimensions sur mesure. Ses données sont enregistrées sous la clé `eas-grext-v1`. La méthode et ses limites sont décrites dans son onglet « Méthode ».
 
 > Outils de pré-dimensionnement. Les résultats doivent être validés par une personne compétente avant toute diffusion.
 
